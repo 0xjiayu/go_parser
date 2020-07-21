@@ -156,6 +156,7 @@ class Pclntbl():
 
 class FuncStruct():
     '''
+    Old version:
     Refer: golang.org/s/go12symtab
 
     struct Func
@@ -170,6 +171,30 @@ class FuncStruct():
         int32        nfuncdata; // number of entries in funcdata list
         int32        npcdata;   // number of entries in pcdata list
     };
+
+    TODO:
+    Latest version:
+    Refer: https://golang.org/src/runtime/runtime2.go
+
+    // Layout of in-memory per-function information prepared by linker
+    // See https://golang.org/s/go12symtab.
+    // Keep in sync with linker (../cmd/link/internal/ld/pcln.go:/pclntab)
+    // and with package debug/gosym and with symtab.go in package runtime.
+    type _func struct {
+    	entry   uintptr // start pc
+    	nameoff int32   // function name
+
+    	args        int32  // in/out args size
+    	deferreturn uint32 // offset of start of a deferreturn call instruction from entry, if any.
+
+    	pcsp      int32
+    	pcfile    int32
+    	pcln      int32
+    	npcdata   int32
+    	funcID    funcID  // set for certain special runtime functions
+    	_         [2]int8 // unused
+    	nfuncdata uint8   // must be last
+    }
     '''
     def __init__(self, addr, pclntbl):
         self.pclntbl = pclntbl
@@ -196,7 +221,7 @@ class FuncStruct():
             idc.MakeComm(self.addr, "Func Entry")
             idaapi.autoWait()
             # make comment for func name offset
-            idc.MakeComm(self.addr + self.pclntbl.ptr_sz, "Func name off: 0x%x" % name_addr)
+            idc.MakeComm(self.addr + self.pclntbl.ptr_sz, "Func name addr: 0x%x" % name_addr)
             idaapi.autoWait()
 
             # Make name string
