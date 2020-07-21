@@ -37,14 +37,6 @@ mov     [rsp+40h+var_30], 13h
 lea     eax, unk_82410F0
 mov     [esp+94h+var_8C], eax
 mov     [esp+94h+var_88], 2
-
-TODO:
-
-mov     rcx, cs:qword_BC2908
-mov     rdx, cs:off_BC2900 ; "message"
-mov     [rsp+0A8h+var_90], rdx
-mov     [rsp+0A8h+var_88], rcx
-call    github_com_rs_zerolog_internal_json_Encoder_AppendKey
 '''
 
 # Currently it's normally ebx, but could in theory be anything - seen ebp
@@ -61,7 +53,6 @@ def is_string_patt(addr):
         return False
 
     # Validate that the string offset actually exists inside the binary
-    # if idaapi.get_segm_name(GetOperandValue(addr, 1)) is None:
     if idc.get_segm_name(idc.GetOperandValue(addr, 1)) is None:
         return False
 
@@ -97,6 +88,79 @@ def is_string_patt(addr):
 
     return False
 
+'''
+Parse string pointer:
+
+pattern:
+
+mov     rcx, cs:qword_BC2908 ; str len
+mov     rdx, cs:off_BC2900 ; str pointer
+mov     [rsp+0A8h+var_90], rdx
+mov     [rsp+0A8h+var_88], rcx
+call    github_com_rs_zerolog_internal_json_Encoder_AppendKey
+'''
+def parse_str_ptr(addr):
+    if idc.GetMnem(addr) != 'mov':
+        return False
+
+    # Validate that the string offset actually exists inside the binary
+    if idc.get_segm_name(idc.GetOperandValue(addr, 1)) is None:
+        return False
+
+    # Check the operands' type:
+    # - first one must be a register;
+    # - second one must be a memory address
+    if idc.GetOpType(addr, 0) != 1 or idc.GetOpType(addr, 1) != 2:
+        return False
+    
+    addr_2 = idc.FindCode(addr, idaapi.SEARCH_DOWN)
+    # same operands' type for addr_2
+    if idc.GetMnem(addr_2) != 'mov' or idc.GetOpType(addr_2, 0) != 1 or idc.GetOpType(addr_2, 1) != 2:
+        return False
+
+    opnd_val_1 = idc.GetOperandValue(addr, 1)
+    opnd_val_2 = idc.GetOperandValue(addr_2, 1)
+    opnd_diff = opnd_val_1 - opnd_val_2
+    # The 2 operands, one of addr of string length, another one is the addr of string pointer
+    # and they must be side by side
+    if opnd_diff != common.ADDR_SZ and opnd_diff != -common.ADDR_SZ:
+        return False
+
+    if opnd_diff > 0:
+        str_len_addr, str_ptr_addr = opnd_val_1, opnd_val_2
+    else:
+        str_len_addr, str_ptr_addr = opnd_val_2, opnd_val_1
+
+    str_len = common.read_mem(str_len_addr)
+    str_ptr = common.read_mem(str_ptr_addr)
+    str_addr = common.read_mem(str_ptr)
+
+    # set max str len
+    if str_len > 64:
+        return False
+
+    if 'rodata' not in idc.get_segm_name(str_ptr) and 'text' not in idc.get_segm_name(str_ptr):
+        return False
+
+    common._debug("------------------------------")
+    common._debug("Possible str ptr:")
+    common._debug("Code addr: 0x%x , str_ptr_addr: 0x%x , str_len_addr: 0x%x" % (addr,str_ptr_addr, str_len_addr))
+    common._debug("str_addr: 0x%x , str_len: 0x%x" % (str_ptr, str_len))
+    #if create_string(str_addr, str_len):
+    if str_len > 1:
+        if idc.MakeStr(str_ptr, str_ptr+str_len):
+            idaapi.autoWait()
+            str_cntnt = str(idc.GetManyBytes(str_ptr, str_len))
+            if opnd_diff > 0:
+                idc.MakeComm(addr, "length: %d" % str_len)
+                idc.MakeComm(addr_2, "")
+            else:
+                idc.MakeComm(addr_2, "length: %d" % str_len)
+                idc.MakeComm(addr, "")
+            return True
+
+    return False
+
 def create_string(addr, string_len):
     # if idaapi.get_segm_name(addr) is None:
     if idc.get_segm_name(addr) is None:
@@ -116,7 +180,7 @@ def create_string(addr, string_len):
     else:
         # If something is already partially analyzed (incorrectly) we need to MakeUnknown it
         idc.MakeUnknown(addr, string_len, idc.DOUNK_SIMPLE)
-        idaapi.autoWait(0)
+        idaapi.autoWait()
         if idc.MakeStr(addr, addr + string_len):
             idaapi.autoWait()
             return True
@@ -155,7 +219,10 @@ def parse_strings():
         common._debug('Found function %s starting/ending @ 0x%x 0x%x' %  (name, addr, end_addr))
 
         while addr <= end_addr:
-            if is_string_patt(addr):
+            if parse_str_ptr(addr):
+                strings_added += 1
+                addr = idc.FindCode(addr, idaapi.SEARCH_DOWN)
+            elif is_string_patt(addr):
                 if 'rodata' not in idc.get_segm_name(addr) and 'text' not in idc.get_segm_name(addr):
                     common._debug('Should a string be in the %s section?' % idc.get_segm_name(addr))
                 string_addr = idc.GetOperandValue(addr, 1)
@@ -171,7 +238,7 @@ def parse_strings():
                        retry.append((addr, string_addr, string_len))
 
                 # Skip the extra mov lines since we know it won't be a load on any of them
-                addr = idc.FindCode(addr_3, idaapi.SEARCH_DOWN)
+                addr = idc.FindCode(addr_3, idaapi.SEARCH_DOWN) 
             else:
                 addr = idc.FindCode(addr, idaapi.SEARCH_DOWN)
 
