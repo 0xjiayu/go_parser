@@ -238,7 +238,7 @@ def parse_strings():
                        retry.append((addr, string_addr, string_len))
 
                 # Skip the extra mov lines since we know it won't be a load on any of them
-                addr = idc.FindCode(addr_3, idaapi.SEARCH_DOWN) 
+                addr = idc.FindCode(addr_3, idaapi.SEARCH_DOWN)
             else:
                 addr = idc.FindCode(addr, idaapi.SEARCH_DOWN)
 
