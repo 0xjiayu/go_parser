@@ -508,7 +508,7 @@ class ArrayType():
         self.type_parser = type_parser
         self.rtype = rtype
         self.name = "array []%s" % rtype.name
-        self.size = 3 * ADDR_SZ
+        self.size = rtype.self_size + 3*ADDR_SZ
         self.elem_type = None
         self.slice_type = None
         self.len = 0
