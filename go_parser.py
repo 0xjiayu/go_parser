@@ -37,7 +37,7 @@ def main():
 
     # parse strings
     parse_str_cnt = strings.parse_strings()
-    common._info("Parsed string count: %d" % parse_str_cnt)
+    common._info("Parsed %d strings\n" % parse_str_cnt)
 
     # parse firstmoduledata
     firstmoddata_addr = moduledata.find_first_moduledata_addr(pclntbl_start_addr)

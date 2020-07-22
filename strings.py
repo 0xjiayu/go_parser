@@ -150,13 +150,13 @@ def parse_str_ptr(addr):
     if str_len > 1:
         if idc.MakeStr(str_ptr, str_ptr+str_len):
             idaapi.autoWait()
-            str_cntnt = str(idc.GetManyBytes(str_ptr, str_len))
             if opnd_diff > 0:
                 idc.MakeComm(addr, "length: %d" % str_len)
-                idc.MakeComm(addr_2, "")
+                idaapi.add_dref(addr_2, str_ptr, idaapi.dr_O)
             else:
                 idc.MakeComm(addr_2, "length: %d" % str_len)
-                idc.MakeComm(addr, "")
+                idaapi.add_dref(addr, str_ptr, idaapi.dr_O)
+            idaapi.autoWait()
             return True
 
     return False
