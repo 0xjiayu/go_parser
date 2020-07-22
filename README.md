@@ -8,6 +8,10 @@
 4. 解析 **firstmoduledata**；
 5. 根据 firstmoduledata 中的信息，解析所有 **types** 并为 types 各种属性打上有意义的 comment
 
+某样本中一个自定义 map 类型的解析结果示例如下：
+
+![](./imgs/map_type_parse_eg.png)
+
 ### 文件列表：
 
 - **go_parser.py** ：整套工具的入口文件，在 IDAPro 中 **[Alt+F7]** 组合键，执行此脚本；
