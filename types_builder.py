@@ -222,7 +222,10 @@ class RType():
         self.name_obj = Name(self.name_addr)
         self.name_obj.parse(self.has_star_prefix())
         self.name = self.name_obj.simple_name
-        idc.MakeNameEx(self.addr, self.name_obj.simple_name, flags=idaapi.SN_FORCE)
+        if self.get_kind() == "Struct" and not self.is_uncomm(): # un-named struct type
+            self.name = "_struct_"
+
+        idc.MakeNameEx(self.addr, self.name, flags=idaapi.SN_FORCE)
         idaapi.autoWait()
 
         # parse type pointer
@@ -753,7 +756,7 @@ class FuncType():
         self.para_type_addrs = list()
         self.ret_types = list()
         self.ret_type_addrs = list()
-        self.name = "func: %s" % rtype.name
+        self.name = rtype.name
         self.size = rtype.self_size + 2*2 # without padding
 
     def parse(self):
