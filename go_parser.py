@@ -27,22 +27,19 @@ idaapi.require("itab")
 idaapi.require("idc")
 
 def main():
-    pclntbl_start_addr = pclntbl.get_gopclntbl_seg_start_addr()
-    if pclntbl_start_addr == idc.BADADDR:
-        raise Exception("Bad pclntbl addr")
+    # find and parsefirfst moduledata
+    firstmoddata_addr = moduledata.find_first_moduledata_addr()
+    firstmoddata = moduledata.ModuleData(firstmoddata_addr)
+    firstmoddata.parse()
 
+    common._info("pclntbl addr: 0x%x\n" % firstmoddata.pclntbl_addr)
     # parse pclntab(functions/srcfiles and function pointers)
-    pclntab = pclntbl.Pclntbl(pclntbl_start_addr)
+    pclntab = pclntbl.Pclntbl(firstmoddata.pclntbl_addr)
     pclntab.parse()
 
     # parse strings
     parse_str_cnt = strings.parse_strings()
     common._info("Parsed %d strings\n" % parse_str_cnt)
-
-    # parse firstmoduledata
-    firstmoddata_addr = moduledata.find_first_moduledata_addr(pclntbl_start_addr)
-    firstmoddata = moduledata.ModuleData(firstmoddata_addr)
-    firstmoddata.parse()
 
     # parse data types
     type_parser = types_builder.TypesParser(firstmoddata)
