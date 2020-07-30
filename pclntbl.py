@@ -214,8 +214,8 @@ class FuncStruct():
         name_addr = common.read_mem(self.addr + self.pclntbl.ptr_sz, forced_addr_sz=4, read_only=is_test) \
             + self.pclntbl.start_addr
         raw_name_str = idc.GetString(name_addr)
-        self.name = common.clean_function_name(raw_name_str)
-        name_len = len(raw_name_str)
+        if raw_name_str and len(raw_name_str) > 0:
+            self.name = common.clean_function_name(raw_name_str)
 
         if not is_test:
             idc.MakeComm(self.addr, "Func Entry")
@@ -225,15 +225,16 @@ class FuncStruct():
             idaapi.autoWait()
 
             # Make name string
-            if idc.MakeStr(name_addr, name_addr + name_len + 1):
-                idaapi.autoWait()
-                common._debug("Match func_name: %s" % self.name)
-            else:
-                common._error("Make func_name_str [%s] failed @0x%x" % (self.name, name_addr))
+            if len(self.name) > 0:
+                if idc.MakeStr(name_addr, name_addr + len(raw_name_str) + 1):
+                    idaapi.autoWait()
+                    common._debug("Match func_name: %s" % self.name)
+                else:
+                    common._error("Make func_name_str [%s] failed @0x%x" % (self.name, name_addr))
 
             # Rename function
             real_func_addr = idaapi.get_func(func_addr)
-            if real_func_addr is not None:
+            if len(self.name) > 0 and real_func_addr is not None:
                 if idc.MakeNameEx(real_func_addr.startEA, self.name, flags=idaapi.SN_FORCE):
                     idaapi.autoWait()
                     common._debug("Rename function 0x%x: %s" % (real_func_addr.startEA, self.name))

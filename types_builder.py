@@ -225,8 +225,9 @@ class RType():
         if self.get_kind() == "Struct" and not self.is_uncomm(): # un-named struct type
             self.name = "_struct_"
 
-        idc.MakeNameEx(self.addr, self.name, flags=idaapi.SN_FORCE)
-        idaapi.autoWait()
+        if len(self.name) > 0:
+            idc.MakeNameEx(self.addr, self.name, flags=idaapi.SN_FORCE)
+            idaapi.autoWait()
 
         # parse type pointer
         if self.ptrtothis_off > 0 and self.ptrtothis_addr != idc.BADADDR:
@@ -431,8 +432,9 @@ class StructType():
         idc.MakeComm(self.addr + self.rtype.self_size + 3*ADDR_SZ, "fileds capacity: 0x%x" % fields_cap)
         idaapi.autoWait()
 
-        idc.MakeNameEx(fields_start_addr, "%s_fields" % self.rtype.name, flags=idaapi.SN_FORCE)
-        idaapi.autoWait()
+        if len(self.rtype.name) > 0:
+            idc.MakeNameEx(fields_start_addr, "%s_fields" % self.rtype.name, flags=idaapi.SN_FORCE)
+            idaapi.autoWait()
 
     def __str__(self):
         if self.rtype:
@@ -616,8 +618,9 @@ class InterfaceType():
         idc.MakeComm(self.addr + self.rtype.self_size + 3*ADDR_SZ, "methods capacity: 0x%x" % methods_cap)
         idaapi.autoWait()
 
-        idc.MakeNameEx(methods_start_addr, "%s_methods" % self.rtype.name, flags=idaapi.SN_FORCE)
-        idaapi.autoWait()
+        if len(self.rtype.name) > 0:
+            idc.MakeNameEx(methods_start_addr, "%s_methods" % self.rtype.name, flags=idaapi.SN_FORCE)
+            idaapi.autoWait()
 
     def __str__(self):
         if self.rtype:
