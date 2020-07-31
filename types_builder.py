@@ -222,7 +222,7 @@ class RType():
         self.name_obj = Name(self.name_addr)
         self.name_obj.parse(self.has_star_prefix())
         self.name = self.name_obj.simple_name
-        if self.get_kind() == "Struct" and not self.is_uncomm(): # un-named struct type
+        if self.get_kind() == "Struct" and not self.is_named(): # un-named struct type
             self.name = "_struct_"
 
         if len(self.name) > 0:
