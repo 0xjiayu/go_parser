@@ -325,6 +325,11 @@ class Name():
                 | (idc.Byte(self.addr + 3 + self.len + 1) & 0xFF)
             self.tag = str(idc.GetManyBytes(self.addr + 3 + self.len + 2, self.tag_len))
 
+        # if name was reased, the replace name string with tag string
+        if (not self.name_str or len(self.name_str) == 0) and self.tag and self.tag_len > 0:
+            self.name_str = self.tag
+            self.len = self.tag_len
+
         if self.is_followed_by_pkgpath:
             self.pkg_len = (idc.Byte(self.addr + 3 + self.len + 2 + self.tag_len) & 0xFF << 8) \
                 | (idc.Byte(self.addr + 3 + self.len + 2 + self.tag_len + 1) & 0xFF)
