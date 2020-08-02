@@ -125,8 +125,11 @@ class Pclntbl():
             srcfile_off = common.read_mem((idx+1) * 4 + self.srcfile_tbl_addr, forced_addr_sz=4) & 0xFFFFFFFF
             srcfile_addr = self.start_addr + srcfile_off
             srcfile_path = idc.GetString(srcfile_addr)
+            idc.MakeComm((idx+1) * 4 + self.srcfile_tbl_addr, "src file addr: 0x%x" % srcfile_addr)
+            idaapi.autoWait()
+
             if srcfile_path is None or len(srcfile_path) == 0:
-                common._error("Failed to parse the [%d] src file(off: 0x%x ,addr: 0x%x" %\
+                common._error("Failed to parse the [%d] src file(off: 0x%x ,addr: 0x%x)" %\
                     (idx+1, srcfile_off, srcfile_addr))
                 continue
 
@@ -139,9 +142,6 @@ class Pclntbl():
                 common._info(srcfile_path)
 
             idc.MakeStr(srcfile_addr, srcfile_addr + len(srcfile_path) + 1)
-            idaapi.autoWait()
-
-            idc.MakeComm((idx+1) * 4 + self.srcfile_tbl_addr, "src file addr: 0x%x" % srcfile_addr)
             idaapi.autoWait()
         common._info("--------------------------------------------------------------------------------------")
 
