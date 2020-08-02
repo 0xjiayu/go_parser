@@ -129,7 +129,7 @@ class Pclntbl():
             idaapi.autoWait()
 
             if srcfile_path is None or len(srcfile_path) == 0:
-                common._error("Failed to parse the [%d] src file(off: 0x%x ,addr: 0x%x)" %\
+                common._error("Failed to parse the [%d] src file(off: 0x%x, addr: 0x%x)" %\
                     (idx+1, srcfile_off, srcfile_addr))
                 continue
 
