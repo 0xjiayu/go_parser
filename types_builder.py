@@ -230,6 +230,10 @@ class RType():
         if len(self.name) == 0 and self.type_parser.is_raw_type(self.get_kind()) and not self.is_named():
             self.name = self.get_kind()
 
+        # if an un-raw type is named, then concat a kind string as prefix with it's name
+        if len(self.name) > 0 and self.is_named() and not self.type_parser.is_raw_type(self.get_kind()):
+            self.name += ("%s_" % self.get_kind().lower())
+
         if len(self.name) > 0:
             idc.MakeNameEx(self.addr, self.name, flags=idaapi.SN_FORCE)
             idaapi.autoWait()
