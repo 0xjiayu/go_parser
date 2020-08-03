@@ -226,6 +226,10 @@ class RType():
         if self.get_kind() == "Struct" and not self.is_named(): # un-named struct type
             self.name = "_struct_"
 
+        # if a raw type is un-named, and name string is erased, the name it as it's kind string
+        if len(self.name) == 0 and self.type_parser.is_raw_type(self.get_kind()) and not self.is_named():
+            self.name = self.get_kind()
+
         if len(self.name) > 0:
             idc.MakeNameEx(self.addr, self.name, flags=idaapi.SN_FORCE)
             idaapi.autoWait()
