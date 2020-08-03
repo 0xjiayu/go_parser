@@ -232,7 +232,7 @@ class RType():
 
         # if an un-raw type is named, then concat a kind string as prefix with it's name
         if len(self.name) > 0 and self.is_named() and not self.type_parser.is_raw_type(self.get_kind()):
-            self.name += ("%s_" % self.get_kind().lower())
+            self.name = ("%s_" % self.get_kind().lower()) + self.name
 
         if len(self.name) > 0:
             idc.MakeNameEx(self.addr, self.name, flags=idaapi.SN_FORCE)
