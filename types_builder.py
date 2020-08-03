@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 import idc, idaapi
-import moduledata
+idaapi.require("moduledata")
+idaapi.require("common")
 from common import read_mem, ADDR_SZ
 from common import _debug, _error, _info
 
@@ -219,7 +220,7 @@ class RType():
             idc.MakeComm(self.addr + 4*ADDR_SZ + 12, "ptrtothis addr")
         idaapi.autoWait()
 
-        self.name_obj = Name(self.name_addr)
+        self.name_obj = Name(self.name_addr, self.moddata)
         self.name_obj.parse(self.has_star_prefix())
         self.name = self.name_obj.simple_name
         if self.get_kind() == "Struct" and not self.is_named(): # un-named struct type
@@ -292,8 +293,9 @@ class Name():
     FOLLOWED_BY_TAG = 0x2
     FOLLOWED_BY_PKGPATH = 0x4
 
-    def __init__(self, addr):
+    def __init__(self, addr, moddata):
         self.addr = addr
+        self.moddata = moddata
         self.len = 0
         self.is_exported = None
         self.is_followed_by_tag = None
@@ -331,31 +333,45 @@ class Name():
             self.len = self.tag_len
 
         if self.is_followed_by_pkgpath:
-            self.pkg_len = (idc.Byte(self.addr + 3 + self.len + 2 + self.tag_len) & 0xFF << 8) \
-                | (idc.Byte(self.addr + 3 + self.len + 2 + self.tag_len + 1) & 0xFF)
-            self.pkg = str(idc.GetManyBytes(self.addr + 3 + self.len + 2 + self.tag_len + 2, self.pkg_len))
+            pkgpath_off_addr = self.addr + 3 + self.len
+            if self.is_followed_by_tag:
+                pkgpath_off_addr += (self.tag_len + 2)
+            pkgpath_off = read_mem(pkgpath_off_addr, forced_addr_sz=4)
+            if pkgpath_off > 0:
+                pkgpath_addr = self.moddata.types_addr + pkgpath_off
+                pkgpath_name_obj = Name(pkgpath_addr, self.moddata)
+                pkgpath_name_obj.parse(False)
+                self.pkg = pkgpath_name_obj.name_str
+                self.pkg_len = len(self.pkg)
+
+            if self.pkg_len:
+                idc.MakeComm(pkgpath_off_addr, "pkgpath: %s" % self.pkg)
+                idaapi.autoWait()
 
         self.full_name = "%s%s%s" % (self.pkg if self.pkg else "", ("_%s" % self.name_str) \
             if self.pkg else self.name_str, ('_%s' % self.tag) if self.tag else "")
         self.simple_name = "%s%s" % (self.pkg if self.pkg else "", ("_%s" % self.name_str) \
             if self.pkg else self.name_str)
 
-        if self.is_exported:
-            idc.MakeComm(self.addr, "flag: exported")
-        elif self.is_followed_by_tag:
-            idc.MakeComm(self.addr, "flag: followed by tag")
-        elif self.is_followed_by_pkgpath:
-            idc.MakeComm(self.addr, "flag: followed by pkg path")
+        flag_comm_str = "flag: %s" %  "exported" if self.is_exported else ""
+        if self.is_followed_by_tag:
+            if self.is_exported:
+                flag_comm_str += ", followed by tag"
+            else:
+                flag_comm_str += "followed by tag"
+        if self.is_followed_by_pkgpath:
+            if self.is_exported or self.is_followed_by_tag:
+                flag_comm_str += ", followed by pkgpath"
+            else:
+                flag_comm_str += "followed by pkgpath"
+        idc.MakeComm(self.addr, flag_comm_str)
         idaapi.autoWait()
 
         idc.MakeStr(self.addr + 3, self.addr + 3 + self.len)
         idaapi.autoWait()
         if self.is_followed_by_tag:
             idc.MakeStr(self.addr + 3 + self.len + 2, self.addr + 3 + self.len + 2 + self.tag_len)
-            idaapi.autoWait()
-        if self.is_followed_by_pkgpath:
-            idc.MakeStr(self.addr + 3 + self.len + 2 + self.tag_len + 2,\
-                self.addr + 3 + self.len + 2 + self.tag_len + 2 + self.pkg_len)
+            idc.MakeComm(self.addr + 3 + self.len + 2, "tag of @ 0x%x" % self.addr)
             idaapi.autoWait()
 
 class PtrType():
@@ -418,7 +434,7 @@ class StructType():
         # parse pkg path
         self.pkg_path_addr = read_mem(self.addr + self.rtype.self_size)
         if self.pkg_path_addr > 0 and self.pkg_path_addr != idc.BADADDR:
-            self.pkg_path_obj = Name(self.pkg_path_addr)
+            self.pkg_path_obj = Name(self.pkg_path_addr, self.type_parser.moddata)
             self.pkg_path_obj.parse(False)
             self.pkg_path = self.pkg_path_obj.simple_name
 
@@ -477,7 +493,7 @@ class StructFiled():
         self.name_obj_addr = read_mem(self.addr)
         if self.name_obj_addr == 0 or self.name_obj_addr == idc.BADADDR:
             raise Exception("Invalid name address when parsing struct field @ 0x%x" % self.addr)
-        self.name_obj = Name(self.name_obj_addr)
+        self.name_obj = Name(self.name_obj_addr, self.type_parser.moddata)
         self.name_obj.parse(False)
         self.name = self.name_obj.simple_name
 
@@ -604,7 +620,7 @@ class InterfaceType():
         # parse pkg path
         self.pkg_path_addr = read_mem(self.addr + self.rtype.self_size)
         if self.pkg_path_addr > 0 and self.pkg_path_addr != idc.BADADDR:
-            self.pkg_path_obj = Name(self.pkg_path_addr)
+            self.pkg_path_obj = Name(self.pkg_path_addr, self.type_parser.moddata)
             self.pkg_path_obj.parse(False)
             self.pkg_path = self.pkg_path_obj.name_str
 
@@ -659,7 +675,7 @@ class IMethodType():
     def parse(self):
         name_off = read_mem(self.addr, forced_addr_sz=4)
         name_addr = (self.types_addr + name_off) & 0xFFFFFFFF
-        self.name_obj = Name(name_addr)
+        self.name_obj = Name(name_addr, self.type_parser.moddata)
         self.name_obj.parse(False)
         self.name = self.name_obj.simple_name
 
@@ -931,7 +947,7 @@ class UncommonType():
         pkgpath_off = read_mem(self.uncomm_type_addr, forced_addr_sz=4) & 0xFFFFFFFF
         if pkgpath_off != 0:
             self.pkgpath_addr = self.types_addr + pkgpath_off
-            pkg_path_obj = Name(self.pkgpath_addr)
+            pkg_path_obj = Name(self.pkgpath_addr, self.type_parser.moddata)
             pkg_path_obj.parse(False)
             self.pkg_path = pkg_path_obj.name_str
 
@@ -1002,7 +1018,7 @@ class MethodType():
         name_off = read_mem(self.addr, forced_addr_sz=4) & 0xFFFFFFFF
         if name_off > 0:
             self.name_addr = self.types_addr + name_off
-            self.name_obj = Name(self.name_addr)
+            self.name_obj = Name(self.name_addr, self.type_parser.moddata)
             self.name_obj.parse(False)
             self.name = self.name_obj.simple_name
 
