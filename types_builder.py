@@ -352,16 +352,18 @@ class Name():
                 self.pkg = pkgpath_name_obj.name_str
                 self.pkg_len = len(self.pkg)
 
-            if self.pkg_len:
-                idc.MakeComm(pkgpath_off_addr, "pkgpath: %s" % self.pkg)
-                idaapi.autoWait()
+                if self.pkg_len:
+                    idc.MakeComm(pkgpath_off_addr, "pkgpath(@ 0x%x): %s" % (pkgpath_addr, self.pkg))
+                    idaapi.autoWait()
 
         self.full_name = "%s%s%s" % (self.pkg if self.pkg else "", ("_%s" % self.name_str) \
             if self.pkg else self.name_str, ('_%s' % self.tag) if self.tag else "")
         self.simple_name = "%s%s" % (self.pkg if self.pkg else "", ("_%s" % self.name_str) \
             if self.pkg else self.name_str)
 
-        flag_comm_str = "flag: %s" %  "exported" if self.is_exported else ""
+        flag_comm_str = "flag: "
+        if self.is_exported:
+            flag_comm_str += "exported"
         if self.is_followed_by_tag:
             if self.is_exported:
                 flag_comm_str += ", followed by tag"
@@ -372,8 +374,9 @@ class Name():
                 flag_comm_str += ", followed by pkgpath"
             else:
                 flag_comm_str += "followed by pkgpath"
-        idc.MakeComm(self.addr, flag_comm_str)
-        idaapi.autoWait()
+        if len(flag_comm_str) > 6: # has valid flag
+            idc.MakeComm(self.addr, flag_comm_str)
+            idaapi.autoWait()
 
         idc.MakeStr(self.addr + 3, self.addr + 3 + self.len)
         idaapi.autoWait()
