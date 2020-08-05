@@ -223,8 +223,6 @@ class RType():
         self.name_obj = Name(self.name_addr, self.moddata)
         self.name_obj.parse(self.has_star_prefix())
         self.name = self.name_obj.simple_name
-        if self.get_kind() == "Struct" and not self.is_named(): # un-named struct type
-            self.name = "_struct_"
 
         # if a raw type is un-named, and name string is erased, the name it as it's kind string
         if len(self.name) == 0 and self.type_parser.is_raw_type(self.get_kind()) and not self.is_named():
@@ -232,7 +230,10 @@ class RType():
 
         # if an un-raw type is named, then concat a kind string as prefix with it's name
         if len(self.name) > 0 and self.is_named() and not self.type_parser.is_raw_type(self.get_kind()):
-            self.name = ("%s_" % self.get_kind().lower()) + self.name
+            self.name += ("_%s" % self.get_kind().lower())
+
+        if self.get_kind() == "Struct" and not self.is_named(): # un-named struct type
+            self.name = "_struct_"
 
         if len(self.name) > 0:
             idc.MakeNameEx(self.addr, self.name, flags=idaapi.SN_FORCE)
@@ -439,7 +440,7 @@ class StructType():
         self.pkg_path_addr = idc.BADADDR
         self.pkg_path_obj = None
         self.pkg_path = ""
-        self.name = "struct %s" % rtype.name
+        self.name = rtype.name
 
     def parse(self):
         # parse pkg path
@@ -544,7 +545,7 @@ class ArrayType():
         self.addr = addr
         self.type_parser = type_parser
         self.rtype = rtype
-        self.name = "array []%s" % rtype.name
+        self.name = rtype.name
         self.size = rtype.self_size + 3*ADDR_SZ
         self.elem_type = None
         self.slice_type = None
@@ -586,7 +587,7 @@ class SliceType():
         self.addr = addr
         self.type_parser = type_parser
         self.rtype = rtype
-        self.name = "slice []%s" % rtype.name
+        self.name = rtype.name
         self.size = self.rtype.self_size + ADDR_SZ
 
     def parse(self):

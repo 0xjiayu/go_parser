@@ -222,7 +222,7 @@ class FuncStruct():
             idc.MakeComm(self.addr, "Func Entry")
             idaapi.autoWait()
             # make comment for func name offset
-            idc.MakeComm(self.addr + self.pclntbl.ptr_sz, "Func name addr: 0x%x" % name_addr)
+            idc.MakeComm(self.addr + self.pclntbl.ptr_sz, "Func name addr(@ 0x%x): %s" % (name_addr, raw_name_str))
             idaapi.autoWait()
 
             # Make name string
