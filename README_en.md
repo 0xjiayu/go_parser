@@ -17,7 +17,7 @@ Inspired by [golang_loader_assist](https://github.com/strazzere/golang_loader_as
 
 A config data structure in DDGMiner v5029 (MD5: 95199e8f1ab987cd8179a60834644663) parsing result as below：
 
-![](D:/Softs/mytools/go_parser/imgs/map_type_parse_eg.png)
+![](./imgs/map_type_parse_eg.png)
 
 And the user-defined source file paths list:
 
