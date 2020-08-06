@@ -6,13 +6,13 @@
 
 Inspired by [golang_loader_assist](https://github.com/strazzere/golang_loader_assist) and [jeb-golang-analyzer](https://github.com/pnfsoftware/jeb-golang-analyzer), I wrote a more complete Go binaries parsing tool for IDAPro.
 
-### Core Features：
+### Main Features：
 
 1. Locate and parse **firstmoduledata** structure in Go binary file, and make comment for each field;
 2. Locate **pclntab**(PC Line Table) according to the **firstmoduledata** and parse it. Then find and parse and recover function names and source file paths in the pclntab. Source file paths will be printed in the output window of IDAPro；
 3. Parse strings and string pointers, make comment for each string, and make **dref** for each string pointer；
-4. Parse **itab**(Interface Table)；
-5. According to firstmoduledata, find each **type** and parse it, meke comment for each attribute of **type**, which will be very convenient for malware researcher to analyze a complex type or data structure definition；
+4. According to firstmoduledata, find each **type** and parse it, meke comment for each attribute of **type**, which will be very convenient for malware researcher to analyze a complex type or data structure definition；
+5. Parse **itab**(Interface Table)；
 6. All those features above are valid for binaries built with **buildmode=pie**.
 
 A config data structure in DDGMiner v5029 (MD5: 95199e8f1ab987cd8179a60834644663) parsing result as below：
@@ -36,7 +36,7 @@ And the user-defined source file paths list:
 ### Note
 
 1. This tool is written in Python2, and tested only on IDA7.2/IDA7.0；
-2. The strings parsing module was migrated from [golang_loader_assist](https://github.com/strazzere/golang_loader_assist), and I added the feature of string pointers parsing. Now it supports x86(32bit & 64bit) architecture only.
+2. The strings parsing module was migrated from [golang_loader_assist](https://github.com/strazzere/golang_loader_assist), and I added the feature of string pointers parsing. It only supports x86(32bit & 64bit) architecture for now.
 
 ### Refer
 

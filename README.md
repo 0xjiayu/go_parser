@@ -11,8 +11,8 @@
 1. 自动定位 **firstmoduledata** 的位置并解析；
 2. 根据 firstmoduledata 中的信息定位到 **pclntab**(PC Line Table)，并从 pclntab 入手解析、恢复**函数符号**，抽取**源码文件列表**；
 3. 解析 **strings** 和 string **pointers**；
-4. 解析 **itab**(Interface Table)；
-5. 根据 firstmoduledata 中的信息，解析所有 **types** 并为 types 各种属性打上有意义的 comment 或 dref；
+4. 根据 firstmoduledata 中的信息，解析所有 **types** 并为 types 各种属性打上有意义的 comment 或 dref；
+5. 解析 **itab**(Interface Table)；
 6. 以上功能对于 **buildmode=pie** 类型的 Go binary 文件依然有效。
 
 DDGMiner v5029 (MD5: 95199e8f1ab987cd8179a60834644663) 样本中核心的配置文件 struct 解析结果示例如下：
