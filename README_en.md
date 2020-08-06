@@ -1,4 +1,4 @@
-## Yet Another Golang parser for IDAPro
+## Yet Another Golang binary parser for IDAPro
 
 **[中文](./README.md) | English**
 
