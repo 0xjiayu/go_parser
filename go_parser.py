@@ -24,7 +24,6 @@ idaapi.require("pclntbl")
 idaapi.require("moduledata")
 idaapi.require("types_builder")
 idaapi.require("itab")
-idaapi.require("idc")
 
 def main():
     # find and parsefirfst moduledata

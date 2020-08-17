@@ -213,7 +213,7 @@ class RType():
         idc.MakeComm(self.addr + 2*ADDR_SZ + 7, "kind: %s" % self.get_kind())
         idc.MakeComm(self.addr + 2*ADDR_SZ + 8, "alg")
         idc.MakeComm(self.addr + 3*ADDR_SZ + 8, "gcdata")
-        idc.MakeComm(self.addr + 4*ADDR_SZ + 8, "name addr: 0x%x" % self.name_addr)
+
         if self.ptrtothis_off > 0:
             idc.MakeComm(self.addr + 4*ADDR_SZ + 12, "ptrtothis addr: 0x%x" % self.ptrtothis_addr)
         else:
@@ -223,6 +223,8 @@ class RType():
         self.name_obj = Name(self.name_addr, self.moddata)
         self.name_obj.parse(self.has_star_prefix())
         self.name = self.name_obj.simple_name
+
+        idc.MakeComm(self.addr + 4*ADDR_SZ + 8, "name(@ 0x%x ): %s" % (self.name_addr, self.name_obj.name_str))
 
         # if a raw type is un-named, and name string is erased, the name it as it's kind string
         if len(self.name) == 0 and self.type_parser.is_raw_type(self.get_kind()) and not self.is_named():
@@ -234,6 +236,9 @@ class RType():
 
         if self.get_kind() == "Struct" and not self.is_named(): # un-named struct type
             self.name = "_struct_"
+
+        if self.get_kind() == "Func" and not self.is_named(): # un-named func type
+            self.name = "_func_"
 
         if len(self.name) > 0:
             idc.MakeNameEx(self.addr, self.name, flags=idaapi.SN_FORCE)
@@ -465,7 +470,8 @@ class StructType():
         idc.MakeComm(self.addr + self.rtype.self_size + 3*ADDR_SZ, "fileds capacity: 0x%x" % fields_cap)
         idaapi.autoWait()
 
-        if len(self.rtype.name) > 0:
+        if len(self.rtype.name) > 0 and fields_cnt > 0:
+            idc.MakeComm(self.addr + self.rtype.self_size + ADDR_SZ, "fields start address")
             idc.MakeNameEx(fields_start_addr, "%s_fields" % self.rtype.name, flags=idaapi.SN_FORCE)
             idaapi.autoWait()
 
@@ -568,6 +574,7 @@ class ArrayType():
 
         idc.MakeComm(self.addr + self.rtype.self_size, "elem type: %s" % self.elem_type.name)
         idc.MakeComm(self.addr + self.rtype.self_size + ADDR_SZ, "slice type: %s" % self.slice_type.name)
+        idc.MakeNameEx(self.addr, "%s_array" % self.elem_type.name, flags=idaapi.SN_FORCE)
         idaapi.autoWait()
 
     def __str__(self):
@@ -598,6 +605,7 @@ class SliceType():
             self.elem_rtype = self.type_parser.parse_type(type_addr=self.elem_type_addr)
 
         idc.MakeComm(self.addr + self.rtype.self_size, "elem rtype: %s" % self.elem_rtype.name)
+        idc.MakeNameEx(self.addr, "%s_slice" % self.elem_rtype.name, flags=idaapi.SN_FORCE)
         idaapi.autoWait()
 
     def __str__(self):
@@ -695,7 +703,7 @@ class IMethodType():
         type_addr = (self.types_addr + type_off) & 0xFFFFFFFF
         if type_off > 0 and type_addr != idc.BADADDR:
             if self.type_parser.has_been_parsed(type_addr):
-                self.type = self.type_parser.parsed_types[type_addr]
+                self.type = self.type_parser.parsed_types[type_addr].rtype
             else:
                 self.type = self.type_parser.parse_type(type_addr=type_addr)
 
@@ -704,7 +712,7 @@ class IMethodType():
             idaapi.autoWait()
 
         if type_off > 0 and type_addr != idc.BADADDR:
-            idc.MakeComm(self.addr + 4, "imethod type: %s (@ 0x%x)" % (self.type.name, type_addr))
+            idc.MakeComm(self.addr + 4, "imethod type: %s (@ 0x%x)" % (self.type.name_obj.name_str, type_addr))
 
     def __str__(self):
         if self.name:
@@ -1040,7 +1048,7 @@ class MethodType():
         if type_off > 0:
             self.mtype_addr = self.types_addr + type_off
             if self.type_parser.has_been_parsed(self.mtype_addr):
-                self.mtype = self.type_parser.parsed_types[self.mtype_addr]
+                self.mtype = self.type_parser.parsed_types[self.mtype_addr].rtype
             else:
                 self.mtype = self.type_parser.parse_type(type_addr=self.mtype_addr)
 
@@ -1051,7 +1059,7 @@ class MethodType():
             (("(@ 0x%x): %s" % (self.name_addr, self.name)) if (name_off>0 and len(self.name)>0) else ""))
 
         idc.MakeComm(self.addr + 4, "Method Type%s" % \
-            (("(@ 0x%x): %s" % (self.mtype_addr, self.mtype.name)) if (type_off>0 and self.mtype is not None) else ""))
+            (("(@ 0x%x): %s" % (self.mtype_addr, self.mtype.name_obj.name_str)) if (type_off>0 and self.mtype is not None) else ""))
 
         self.ifn_addr = (self.text_addr + self.ifn_off) & 0xFFFFFFFF
         idc.MakeComm(self.addr + 8, "ifn%s" % \
