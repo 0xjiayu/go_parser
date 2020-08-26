@@ -34,6 +34,8 @@ class TypesParser():
             if type_off == 0:
                 continue
             type_addr = self.moddata.types_addr + type_off
+            idc.MakeComm(self.moddata.typelink_addr + idx*4, "type @ 0x%x" % type_addr)
+            idaapi.autoWait()
 
             if type_addr in self.parsed_types.keys():
                 _debug("  "*depth + 'already parsed')
@@ -41,8 +43,6 @@ class TypesParser():
             #print self.parsed_types.keys()
             #try:
             self.parse_type(type_addr=type_addr)
-            idc.MakeComm(self.moddata.typelink_addr + idx*4, "type @ 0x%x" % type_addr)
-            idaapi.autoWait()
             #except Exception as e:
             #    _error("Failed to parse type_off( 0x%x ) @ 0x%x" % (type_off, type_addr))
             #    raise Exception(e)
