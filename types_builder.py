@@ -1066,12 +1066,24 @@ class MethodType():
             (("(@ 0x%x): %s" % (self.mtype_addr, self.mtype.name_obj.name_str)) if (type_off>0 and self.mtype is not None) else ""))
 
         self.ifn_addr = (self.text_addr + self.ifn_off) & 0xFFFFFFFF
+        ifn_name = idc.get_func_name(self.ifn_addr)
+        if ifn_name is None or len(ifn_name) == 0:
+            if self.mtype is not None:
+                ifn_name = self.mtype.name
+            else:
+                ifn_name == "_func_"
         idc.MakeComm(self.addr + 8, "ifn%s" % \
-            (("(@ 0x%x): %s" % (self.ifn_addr, self.mtype.name)) if (self.ifn_off>0 and self.mtype is not None) else ""))
+            (("(@ 0x%x): %s" % (self.ifn_addr, ifn_name)) if self.ifn_off>0 else ""))
 
         self.tfn_addr = (self.text_addr + self.tfn_off) & 0xFFFFFFFF
+        tfn_name = idc.get_func_name(self.tfn_addr)
+        if tfn_name is None or len(tfn_name) == 0:
+            if self.mtype is not None:
+                tfn_name = self.mtype.name
+            else:
+                tfn_name = "_func_"
         idc.MakeComm(self.addr + 12, "tfn%s" % \
-            (("(@ 0x%x): %s" % (self.tfn_addr, self.mtype.name)) if (self.tfn_off>0 and self.mtype is not None) else ""))
+            (("(@ 0x%x): %s" % (self.tfn_addr, tfn_name)) if self.tfn_off>0 else ""))
 
         idaapi.autoWait()
 
