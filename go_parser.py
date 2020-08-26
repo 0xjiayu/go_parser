@@ -10,7 +10,6 @@ __license__ = "MIT"
 __version__ = "1.0"
 __email__ = ["jiayu0x@gmail.com"]
 
-#import common, strings, pclntbl, moduledata, types_builder, itab
 import idautils, idc, idaapi
 
 import sys
