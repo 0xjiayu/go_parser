@@ -230,7 +230,7 @@ class RType():
         if len(self.name) == 0 and self.type_parser.is_raw_type(self.get_kind()) and not self.is_named():
             self.name = self.get_kind()
 
-        # if an un-raw type is named, then concat a kind string as prefix with it's name
+        # if an un-raw type is named, then concat a kind string as suffix with it's name
         if len(self.name) > 0 and self.is_named() and not self.type_parser.is_raw_type(self.get_kind()):
             self.name += ("_%s" % self.get_kind().lower())
 
@@ -239,6 +239,9 @@ class RType():
 
         if self.get_kind() == "Func" and not self.is_named(): # un-named func type
             self.name = "_func_"
+
+        if self.get_kind() == "Ptr":
+            self.name += "_ptr"
 
         if len(self.name) > 0:
             idc.MakeNameEx(self.addr, self.name, flags=idaapi.SN_FORCE)
@@ -330,11 +333,12 @@ class Name():
 
         self.len = ((idc.Byte(self.addr + 1) & 0xFF << 8) | (idc.Byte(self.addr + 2) & 0xFF)) & 0xFFFF
         self.name_str = str(idc.GetManyBytes(self.addr + 3, self.len))
-        if has_star_prefix:
-            if self.name_str == "*":
-                self.name_str == self.name_str[1:]
+        # delete star_prefix:
+        while True:
+            if self.name_str[0] == '*':
+                self.name_str = self.name_str[1:]
             else:
-                _debug("extra star without star (%s)" % self.name_str)
+                break
 
         if self.is_followed_by_tag:
             self.tag_len = (idc.Byte(self.addr+ 3 + self.len) & 0xFF << 8) \
