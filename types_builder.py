@@ -583,6 +583,7 @@ class ArrayType():
 
         idc.MakeComm(self.addr + self.rtype.self_size, "elem type: %s" % self.elem_type.name)
         idc.MakeComm(self.addr + self.rtype.self_size + ADDR_SZ, "slice type: %s" % self.slice_type.name)
+        idc.MakeComm(self.addr + self.rtype.self_size + 2 * ADDR_SZ, "array length: %d" % self.len)
         idc.MakeNameEx(self.addr, "%s_array" % self.elem_type.name, flags=idaapi.SN_FORCE)
         idaapi.autoWait()
 
