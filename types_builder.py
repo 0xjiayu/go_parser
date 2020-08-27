@@ -224,7 +224,7 @@ class RType():
         self.name_obj.parse(self.has_star_prefix())
         self.name = self.name_obj.simple_name
 
-        idc.MakeComm(self.addr + 4*ADDR_SZ + 8, "name(@ 0x%x ): %s" % (self.name_addr, self.name_obj.name_str))
+        idc.MakeComm(self.addr + 4*ADDR_SZ + 8, "name(@ 0x%x ): %s" % (self.name_addr, self.name_obj.orig_name_str))
 
         # if a raw type is un-named, and name string is erased, the name it as it's kind string
         if len(self.name) == 0 and self.type_parser.is_raw_type(self.get_kind()) and not self.is_named():
@@ -276,7 +276,7 @@ class RType():
 class Name():
     '''
     A rtype name struct
-    Refer: https://golang.org/src/reflect/type.go#
+    Refer: https://golang.org/src/reflect/type.go
 
     name is an encoded type name with optional extra data.
     
@@ -317,6 +317,7 @@ class Name():
         self.is_exported = None
         self.is_followed_by_tag = None
         self.is_followed_by_pkgpath = None
+        self.orig_name_str = ""
         self.name_str = ""
         self.simple_name = ""
         self.full_name = ""
@@ -332,7 +333,8 @@ class Name():
         self.is_followed_by_pkgpath = flag_byte & self.FOLLOWED_BY_PKGPATH != 0
 
         self.len = ((idc.Byte(self.addr + 1) & 0xFF << 8) | (idc.Byte(self.addr + 2) & 0xFF)) & 0xFFFF
-        self.name_str = str(idc.GetManyBytes(self.addr + 3, self.len))
+        self.orig_name_str = str(idc.GetManyBytes(self.addr + 3, self.len))
+        self.name_str = self.orig_name_str
         # delete star_prefix:
         while True:
             if self.name_str[0] == '*':
@@ -412,18 +414,21 @@ class PtrType():
         self.size = rtype.self_size + ADDR_SZ
         self.target_type_addr = idc.BADADDR
         self.target_rtype = None
+        self.target_rtype_origname = ""
         self.name = ""
 
     def parse(self):
         self.target_type_addr = read_mem(self.addr + self.rtype.self_size)
         if self.type_parser.has_been_parsed(self.target_type_addr):
             self.target_rtype = self.type_parser.parsed_types[self.target_type_addr]
+            self.target_rtype_origname = self.target_rtype.rtype.name_obj.orig_name_str
         else:
             self.target_rtype = self.type_parser.parse_type(type_addr=self.target_type_addr)
+            self.target_rtype_origname = self.target_rtype.name_obj.orig_name_str
         if self.target_rtype:
             self.name = self.target_rtype.name + "_ptr"
 
-        idc.MakeComm(self.addr + self.rtype.self_size, "target rtype: %s" % self.target_rtype.name)
+        idc.MakeComm(self.addr + self.rtype.self_size, "target rtype: %s" % self.target_rtype_origname)
         idaapi.autoWait()
 
     def __str__(self):
