@@ -133,7 +133,7 @@ def get_goroot():
     if len(goroot_path_str) > 0:
         _info("Go ROOT Path: %s\n" % goroot_path_str)
 
-    return goroot_path_str
+    return goroot_path_str.replace("\\", "/")
 
 def find_ret_cb(flow_chart):
     '''
