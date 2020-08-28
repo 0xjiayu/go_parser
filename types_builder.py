@@ -718,11 +718,11 @@ class IMethodType():
                 self.type = self.type_parser.parse_type(type_addr=type_addr)
 
         if name_off > 0 and name_off != idc.BADADDR:
-            idc.MakeComm(self.addr, "imethod name: %s (@ 0x%x)" % (self.name, name_addr))
+            idc.MakeComm(self.addr, "imethod name(@ 0x%x): %s" % (name_addr, self.name))
             idaapi.autoWait()
 
         if type_off > 0 and type_addr != idc.BADADDR:
-            idc.MakeComm(self.addr + 4, "imethod type: %s (@ 0x%x)" % (self.type.name_obj.name_str, type_addr))
+            idc.MakeComm(self.addr + 4, "imethod type(@ 0x%x): %s" % (type_addr, self.type.name_obj.name_str))
 
     def __str__(self):
         if self.name:
@@ -776,7 +776,7 @@ class ChanType():
         elif dir_code == self.SEND_DIR:
           return 'send'
         else:
-          return 'both'
+          return 'send & recv'
 
     def __str__(self):
         return self.name
