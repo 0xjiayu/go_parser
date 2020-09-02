@@ -79,7 +79,7 @@ def parse_itab(moddata, type_parser):
 
     curr_addr = itab_addr
     while curr_addr < itab_end_addr:
-        curr_itabelem_addr = common.read_mem(curr_addr, read_only=True)
+        curr_itabelem_addr = common.read_mem(curr_addr)
         itab_elem = ItabElem(curr_itabelem_addr, type_parser)
         itab_elem.parse()
         itab_num += 1
