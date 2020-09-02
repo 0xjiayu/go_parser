@@ -36,6 +36,7 @@ class TypesParser():
             type_addr = self.moddata.types_addr + type_off
             idc.MakeComm(self.moddata.typelink_addr + idx*4, "type @ 0x%x" % type_addr)
             idaapi.autoWait()
+            _debug("%dth type, offset: 0x%x, addr: 0x%x" % (idx+1, type_off, type_addr))
 
             if type_addr in self.parsed_types.keys():
                 _debug("  "*depth + 'already parsed')
@@ -178,6 +179,7 @@ class RType():
         self.self_size = 0x20 if ADDR_SZ == 4 else 0x30
 
     def parse(self):
+        _debug("RType @ 0x%x" % self.addr)
         self.size = read_mem(self.addr)
         self.ptrdata = read_mem(self.addr + ADDR_SZ)
         self.hash = read_mem(self.addr + 2*ADDR_SZ, forced_addr_sz = 4)
@@ -207,15 +209,18 @@ class RType():
         if self.is_uncomm():
             tflag_comm += " Uncommon"
         idc.MakeComm(self.addr + 2*ADDR_SZ + 4, tflag_comm)
+        _debug(tflag_comm)
 
         idc.MakeComm(self.addr + 2*ADDR_SZ + 5, "align")
         idc.MakeComm(self.addr + 2*ADDR_SZ + 6, "field align")
         idc.MakeComm(self.addr + 2*ADDR_SZ + 7, "kind: %s" % self.get_kind())
         idc.MakeComm(self.addr + 2*ADDR_SZ + 8, "alg")
         idc.MakeComm(self.addr + 3*ADDR_SZ + 8, "gcdata")
+        _debug("kind: %s" % self.get_kind())
 
         if self.ptrtothis_off > 0:
             idc.MakeComm(self.addr + 4*ADDR_SZ + 12, "ptrtothis addr: 0x%x" % self.ptrtothis_addr)
+            _debug("ptrtothis addr: 0x%x" % self.ptrtothis_addr)
         else:
             idc.MakeComm(self.addr + 4*ADDR_SZ + 12, "ptrtothis addr")
         idaapi.autoWait()
@@ -225,6 +230,7 @@ class RType():
         self.name = self.name_obj.simple_name
 
         idc.MakeComm(self.addr + 4*ADDR_SZ + 8, "name(@ 0x%x ): %s" % (self.name_addr, self.name_obj.orig_name_str))
+        _debug("name(@ 0x%x ): %s" % (self.name_addr, self.name_obj.orig_name_str))
 
         # if a raw type is un-named, and name string is erased, the name it as it's kind string
         if len(self.name) == 0 and self.type_parser.is_raw_type(self.get_kind()) and not self.is_named():
@@ -418,6 +424,7 @@ class PtrType():
         self.name = ""
 
     def parse(self):
+        _debug("PtrType @ 0x%x" % self.addr)
         self.target_type_addr = read_mem(self.addr + self.rtype.self_size)
         if self.type_parser.has_been_parsed(self.target_type_addr):
             self.target_rtype = self.type_parser.parsed_types[self.target_type_addr]
@@ -430,6 +437,7 @@ class PtrType():
 
         idc.MakeComm(self.addr + self.rtype.self_size, "target rtype: %s" % self.target_rtype_origname)
         idaapi.autoWait()
+        _debug("target rtype: %s" % self.target_rtype_origname)
 
     def __str__(self):
         return self.name
@@ -457,6 +465,7 @@ class StructType():
         self.name = rtype.name
 
     def parse(self):
+        _debug("Struct Type @ 0x%x" % self.addr)
         # parse pkg path
         self.pkg_path_addr = read_mem(self.addr + self.rtype.self_size)
         if self.pkg_path_addr > 0 and self.pkg_path_addr != idc.BADADDR:
@@ -478,11 +487,15 @@ class StructType():
         idc.MakeComm(self.addr + self.rtype.self_size + 2*ADDR_SZ, "fields count: 0x%x" % fields_cnt)
         idc.MakeComm(self.addr + self.rtype.self_size + 3*ADDR_SZ, "fileds capacity: 0x%x" % fields_cap)
         idaapi.autoWait()
+        _debug("Struct pkg path: %s" % (("(@ 0x%x): %s" % (self.pkg_path_addr, self.pkg_path)) \
+            if (self.pkg_path_addr>0 and len(self.pkg_path)>0) else ""))
+        _debug("Struct fields num: 0x%x" % fields_cnt)
 
         if len(self.rtype.name) > 0 and fields_cnt > 0:
             idc.MakeComm(self.addr + self.rtype.self_size + ADDR_SZ, "fields start address")
             idc.MakeNameEx(fields_start_addr, "%s_fields" % self.rtype.name, flags=idaapi.SN_FORCE)
             idaapi.autoWait()
+            _debug("Struct fields start addr: 0x%x" % fields_start_addr)
 
     def __str__(self):
         if self.rtype:
@@ -540,6 +553,8 @@ class StructFiled():
         idaapi.autoWait()
         idc.MakeComm(self.addr + ADDR_SZ, "field rtype: %s" % self.rtype.name)
         idaapi.autoWait()
+        _debug("Struct field name: %s" % self.name_obj.name_str)
+        _debug("Struct field rtype: %s" % self.rtype.name)
 
     def __str__(self):
         return self.name
@@ -567,6 +582,7 @@ class ArrayType():
         self.len = 0
 
     def parse(self):
+        _debug("Array Type @ 0x%x" % self.addr)
         elem_type_addr = read_mem(self.addr + self.rtype.self_size)
         if self.type_parser.has_been_parsed(elem_type_addr):
             self.elem_type = self.type_parser.parsed_types[elem_type_addr]
@@ -586,6 +602,8 @@ class ArrayType():
         idc.MakeComm(self.addr + self.rtype.self_size + 2 * ADDR_SZ, "array length: %d" % self.len)
         idc.MakeNameEx(self.addr, "%s_array" % self.elem_type.name, flags=idaapi.SN_FORCE)
         idaapi.autoWait()
+        _debug("Array elem type: %s" % self.elem_type.name)
+        _debug("Array slice type: %s" % self.slice_type.name)
 
     def __str__(self):
         return "%s array(len: %d)" % (self.elem_type.name, self.len)
@@ -608,6 +626,7 @@ class SliceType():
         self.size = self.rtype.self_size + ADDR_SZ
 
     def parse(self):
+        _debug("Slice Type @ 0x%x" % self.addr)
         self.elem_type_addr = read_mem(self.addr + self.rtype.self_size)
         if self.type_parser.has_been_parsed(self.elem_type_addr):
             self.elem_rtype = self.type_parser.parsed_types[self.elem_type_addr]
@@ -617,6 +636,7 @@ class SliceType():
         idc.MakeComm(self.addr + self.rtype.self_size, "elem rtype: %s" % self.elem_rtype.name)
         idc.MakeNameEx(self.addr, "%s_slice" % self.elem_rtype.name, flags=idaapi.SN_FORCE)
         idaapi.autoWait()
+        _debug("Slice elem rtype: %s" % self.elem_rtype.name)
 
     def __str__(self):
         if self.elem_rtype:
@@ -647,6 +667,7 @@ class InterfaceType():
         self.methods = list()
 
     def parse(self):
+        _debug("Interface @ 0x%x" % self.addr)
         # parse pkg path
         self.pkg_path_addr = read_mem(self.addr + self.rtype.self_size)
         if self.pkg_path_addr > 0 and self.pkg_path_addr != idc.BADADDR:
@@ -668,6 +689,10 @@ class InterfaceType():
         idc.MakeComm(self.addr + self.rtype.self_size + 2*ADDR_SZ, "methods count: 0x%x" % methods_cnt)
         idc.MakeComm(self.addr + self.rtype.self_size + 3*ADDR_SZ, "methods capacity: 0x%x" % methods_cap)
         idaapi.autoWait()
+
+        _debug("Interface pkg path%s" % \
+            (("(@ 0x%x): %s" % (self.pkg_path_addr, self.pkg_path)) if (self.pkg_path_addr>0 and len(self.pkg_path)>0) else ""))
+        _debug("Interface methods count: 0x%x" % methods_cnt)
 
         if len(self.rtype.name) > 0:
             idc.MakeNameEx(methods_start_addr, "%s_methods" % self.rtype.name, flags=idaapi.SN_FORCE)
@@ -703,6 +728,7 @@ class IMethodType():
         self.type = None
 
     def parse(self):
+        _debug("Imethod Type @ 0x%x" % self.addr)
         name_off = read_mem(self.addr, forced_addr_sz=4)
         name_addr = (self.types_addr + name_off) & 0xFFFFFFFF
         self.name_obj = Name(name_addr, self.type_parser.moddata)
@@ -720,9 +746,12 @@ class IMethodType():
         if name_off > 0 and name_off != idc.BADADDR:
             idc.MakeComm(self.addr, "imethod name(@ 0x%x): %s" % (name_addr, self.name))
             idaapi.autoWait()
+            _debug("Interface imethod name(@ 0x%x): %s" % (name_addr, self.name))
 
         if type_off > 0 and type_addr != idc.BADADDR:
             idc.MakeComm(self.addr + 4, "imethod type(@ 0x%x): %s" % (type_addr, self.type.name_obj.name_str))
+            idaapi.autoWait()
+            _debug("Interface imethod type(@ 0x%x): %s" % (type_addr, self.type.name_obj.name_str))
 
     def __str__(self):
         if self.name:
@@ -754,6 +783,7 @@ class ChanType():
         self.name = ""
 
     def parse(self):
+        _debug("Channel Type @ 0x%x" % self.addr)
         elem_type_addr = read_mem(self.addr + self.rtype.self_size)
         if self.type_parser.has_been_parsed(elem_type_addr):
             self.elem_type = self.type_parser.parsed_types[elem_type_addr]
@@ -814,6 +844,7 @@ class FuncType():
         self.size = rtype.self_size + 2*2 # without padding
 
     def parse(self):
+        _debug("Func Type @ 0x%x" % self.addr)
         self.para_cnt = read_mem(self.addr + self.rtype.self_size, forced_addr_sz=2) & 0xFFFF
         self.ret_cnt = read_mem(self.addr + self.rtype.self_size + 2, forced_addr_sz=2) & 0xFFFF
         if self.ret_cnt & FuncType.VARIADIC_FLAG:
@@ -891,9 +922,11 @@ class MapType():
         self.buck_size = 0
         self.flags = -1
         self.name = ""
-        self.size = rtype.self_size + 4 * ADDR_SZ + 1 + 1 + 2 + 4
+        #self.size = rtype.self_size + 4 * ADDR_SZ + 1 + 1 + 2 + 4
+        self.size = rtype.self_size + 3 * ADDR_SZ + 1 + 1 + 2 + 4
 
     def parse(self):
+        _debug("Map Type @ 0x%x" % self.addr)
         map_attr_addr = self.addr + self.rtype.self_size
 
         key_type_addr = read_mem(map_attr_addr)
@@ -914,23 +947,35 @@ class MapType():
         else:
             self.buck_type = self.type_parser.parse_type(type_addr=buck_type_addr)
 
-        self.hasher_func_addr = read_mem(map_attr_addr + 3*ADDR_SZ) & 0xFFFFFFFFFFFFFFFF
-        self.key_size = idc.Byte(map_attr_addr + 4*ADDR_SZ) & 0xFF
-        self.val_size = idc.Byte(map_attr_addr + 4*ADDR_SZ + 1) & 0xFF
-        self.buck_size = read_mem(map_attr_addr + 4*ADDR_SZ + 2, forced_addr_sz=2) & 0xFFFF
-        self.flags = read_mem(map_attr_addr + 4*ADDR_SZ + 4, forced_addr_sz=4) & 0xFFFFFFFF
+        self.key_size = idc.Byte(map_attr_addr + 3*ADDR_SZ) & 0xFF
+        self.val_size = idc.Byte(map_attr_addr + 3*ADDR_SZ + 1) & 0xFF
+        self.buck_size = read_mem(map_attr_addr + 3*ADDR_SZ + 2, forced_addr_sz=2) & 0xFFFF
+        self.flags = read_mem(map_attr_addr + 3*ADDR_SZ + 4, forced_addr_sz=4) & 0xFFFFFFFF
+
+        #self.hasher_func_addr = read_mem(map_attr_addr + 3*ADDR_SZ) & 0xFFFFFFFFFFFFFFFF
+        #self.key_size = idc.Byte(map_attr_addr + 4*ADDR_SZ) & 0xFF
+        #self.val_size = idc.Byte(map_attr_addr + 4*ADDR_SZ + 1) & 0xFF
+        #self.buck_size = read_mem(map_attr_addr + 4*ADDR_SZ + 2, forced_addr_sz=2) & 0xFFFF
+        #self.flags = read_mem(map_attr_addr + 4*ADDR_SZ + 4, forced_addr_sz=4) & 0xFFFFFFFF
 
         self.name = "map [%s]%s" % (self.key_type.name, self.elem_type.name)
 
         idc.MakeComm(map_attr_addr, "Key type: %s" % self.key_type.name)
         idc.MakeComm(map_attr_addr + ADDR_SZ, "Elem type: %s " % self.elem_type.name)
         idc.MakeComm(map_attr_addr + 2*ADDR_SZ, "Bucket type: %s" % self.buck_type.name)
-        idc.MakeComm(map_attr_addr + 3*ADDR_SZ, "hash function for hashing keys (ptr to key, seed) -> hash")
-        idc.MakeComm(map_attr_addr + 4*ADDR_SZ, "Key size: 0x%x" % self.key_size)
-        idc.MakeComm(map_attr_addr + 4*ADDR_SZ + 1, "Value size: 0x%x" % self.val_size)
-        idc.MakeComm(map_attr_addr + 4*ADDR_SZ + 2, "Bucket size: 0x%x" % self.buck_size)
-        idc.MakeComm(map_attr_addr + 4*ADDR_SZ + 4, "Flags: 0x%x" % self.flags)
+        idc.MakeComm(map_attr_addr + 3*ADDR_SZ, "Key size: 0x%x" % self.key_size)
+        idc.MakeComm(map_attr_addr + 3*ADDR_SZ + 1, "Value size: 0x%x" % self.val_size)
+        idc.MakeComm(map_attr_addr + 3*ADDR_SZ + 2, "Bucket size: 0x%x" % self.buck_size)
+        idc.MakeComm(map_attr_addr + 3*ADDR_SZ + 4, "Flags: 0x%x" % self.flags)
+        #idc.MakeComm(map_attr_addr + 3*ADDR_SZ, "hash function for hashing keys (ptr to key, seed) -> hash")
+        #idc.MakeComm(map_attr_addr + 4*ADDR_SZ, "Key size: 0x%x" % self.key_size)
+        #idc.MakeComm(map_attr_addr + 4*ADDR_SZ + 1, "Value size: 0x%x" % self.val_size)
+        #idc.MakeComm(map_attr_addr + 4*ADDR_SZ + 2, "Bucket size: 0x%x" % self.buck_size)
+        #idc.MakeComm(map_attr_addr + 4*ADDR_SZ + 4, "Flags: 0x%x" % self.flags)
         idaapi.autoWait()
+
+        _debug("Map Key type: %s" % self.key_type.name)
+        _debug("Map Elem type: %s " % self.elem_type.name)
 
     def __str__(self):
         return self.name
@@ -974,6 +1019,7 @@ class UncommonType():
         self.size = UncommonType.SIZE
         
     def parse(self):
+        _debug("Start to parse Uncommon type @ 0x%x , Uncommon field start addr @ 0x%x" % (self.addr, self.uncomm_type_addr))
         pkgpath_off = read_mem(self.uncomm_type_addr, forced_addr_sz=4) & 0xFFFFFFFF
         if pkgpath_off != 0:
             self.pkgpath_addr = self.types_addr + pkgpath_off
@@ -997,10 +1043,14 @@ class UncommonType():
 
         idc.MakeComm(self.uncomm_type_addr, "pkg path%s" % \
             (("(@ 0x%x): %s" % (self.pkgpath_addr, self.pkg_path)) if (pkgpath_off>0 and len(self.pkg_path)>0) else ""))
+        _debug("Ucommon type pkg path%s" % \
+            (("(@ 0x%x): %s" % (self.pkgpath_addr, self.pkg_path)) if (pkgpath_off>0 and len(self.pkg_path)>0) else ""))
         idc.MakeComm(self.uncomm_type_addr + 4, "methods number: %d" % self.meth_cnt)
+        _debug("Uncommon type methods number: %d" % self.meth_cnt)
         idc.MakeComm(self.uncomm_type_addr + 6, "exported methods number: %d" % self.xmeth_cnt)
         if self.meth_cnt > 0:
             idc.MakeComm(self.uncomm_type_addr + 8, "methods addr: 0x%x" % ((self.uncomm_type_addr + self.meth_off) & 0xFFFFFFFF))
+            _debug("Ucommon type methods addr: 0x%x" % ((self.uncomm_type_addr + self.meth_off) & 0xFFFFFFFF))
         else:
             idc.MakeComm(self.uncomm_type_addr + 8, "methods offset")
         idc.MakeComm(self.uncomm_type_addr + 12, "unused field: 0x%x" % self.unused)
@@ -1067,8 +1117,12 @@ class MethodType():
 
         idc.MakeComm(self.addr, "Method Name%s" % \
             (("(@ 0x%x): %s" % (self.name_addr, self.name)) if (name_off>0 and len(self.name)>0) else ""))
+        _debug("Ucommon type Method Name%s" % \
+            (("(@ 0x%x): %s" % (self.name_addr, self.name)) if (name_off>0 and len(self.name)>0) else ""))
 
         idc.MakeComm(self.addr + 4, "Method Type%s" % \
+            (("(@ 0x%x): %s" % (self.mtype_addr, self.mtype.name_obj.name_str)) if (type_off>0 and self.mtype is not None) else ""))
+        _debug("Uncommon type Method Type%s" % \
             (("(@ 0x%x): %s" % (self.mtype_addr, self.mtype.name_obj.name_str)) if (type_off>0 and self.mtype is not None) else ""))
 
         self.ifn_addr = (self.text_addr + self.ifn_off) & 0xFFFFFFFF
