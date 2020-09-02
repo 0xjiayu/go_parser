@@ -5,6 +5,7 @@ import string
 
 DEBUG = False
 ADDR_SZ = 4 # Default: 32-bit
+GOVER = ""
 
 if idaapi.get_inf_structure().is_64bit():
     ADDR_SZ = 8
@@ -163,3 +164,43 @@ def clean_function_name(name_str):
         name_str = name_str.replace(c, '_')
 
     return name_str
+
+def get_goversion():
+    global GOVER
+
+    func_goroot = find_func_by_name("runtime_schedinit")
+    if func_goroot is None:
+        _error("Failed to find func runtime_schedinit")
+        return
+
+    schedinit_flowchart = idaapi.FlowChart(f=func_goroot)
+    _debug("Flowchart number of runtime_schedinit: %d" % schedinit_flowchart.size)
+
+    for fc_idx in xrange(schedinit_flowchart.size):
+        fc = schedinit_flowchart[fc_idx]
+        _debug("Current flowchart start addr: 0x%x" % fc.startEA)
+        # mov     dword_AD744C, 7 ; dword_AD744C stores length of Go Version string
+        if idc.GetMnem(fc.startEA) == "mov" and idc.GetOpType(fc.startEA, 0) == 2 \
+            and str(idc.GetOperandValue(fc.startEA, 1)) == "7":
+            _debug("Find length of go version string @ 0x%x" % fc.startEA)
+            possible_goversion_len_addr = idc.GetOperandValue(fc.startEA, 0)
+            _debug("Possible go version string len addr: 0x%x" % possible_goversion_len_addr)
+            possible_goversion_str_ptr_addr = possible_goversion_len_addr - ADDR_SZ
+            possible_goversion_str_addr = read_mem(possible_goversion_str_ptr_addr)
+            _debug("Possible go version string addr: 0x%x" % possible_goversion_str_addr)
+            possible_goversion_len = read_mem(possible_goversion_len_addr)
+            _debug("Real go version string len: %d" % possible_goversion_len)
+            if possible_goversion_len >=5 and possible_goversion_len < 10:
+                if idc.MakeStr(possible_goversion_str_addr, possible_goversion_str_addr + possible_goversion_len):
+                    idaapi.autoWait()
+                    goversion_str = str(idc.GetManyBytes(possible_goversion_str_addr, possible_goversion_len))
+                    _debug(goversion_str)
+                    if goversion_str.startswith("go"):
+                        GOVER = goversion_str[2:]
+                        _info("Go version: %s" % GOVER)
+                    else:
+                        _debug("Invalid go string")
+                else:
+                    _debug("Failed to create go version string")
+            else:
+                _debug("Invalid go version len")

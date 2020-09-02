@@ -35,6 +35,8 @@ def main():
     pclntab = pclntbl.Pclntbl(firstmoddata.pclntbl_addr)
     pclntab.parse()
 
+    common.get_goversion()
+
     # parse strings
     parse_str_cnt = strings.parse_strings()
     common._info("Parsed %d strings\n" % parse_str_cnt)
