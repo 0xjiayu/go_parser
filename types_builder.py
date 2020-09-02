@@ -288,13 +288,13 @@ class Name():
     
     The first byte is a bit field containing:
     
-    	1<<0 the name is exported
-    	1<<1 tag data follows the name
-    	1<<2 pkgPath nameOff follows the name and tag
+        1<<0 the name is exported
+        1<<1 tag data follows the name
+        1<<2 pkgPath nameOff follows the name and tag
     
     The next two bytes are the data length:
     
-    	 l := uint16(data[1])<<8 | uint16(data[2])
+         l := uint16(data[1])<<8 | uint16(data[2])
     
     Bytes [3:3+l] are the string data.
     
@@ -309,7 +309,7 @@ class Name():
     whether the pointed to type is exported.
     
     type name struct {
-    	bytes *byte
+        bytes *byte
     }
     '''
     EXPORTED = 0x1
@@ -897,16 +897,16 @@ class MapType():
     Refer: https://golang.org/src/reflect/type.go
 
     type mapType struct {
-    	rtype
-    	key    *rtype // map key type
-    	elem   *rtype // map element (value) type
-    	bucket *rtype // internal bucket structure
-    	// function for hashing keys (ptr to key, seed) -> hash
-    	hasher     func(unsafe.Pointer, uintptr) uintptr
-    	keysize    uint8  // size of key slot
-    	valuesize  uint8  // size of value slot
-    	bucketsize uint16 // size of bucket
-    	flags      uint32
+        rtype
+        key    *rtype // map key type
+        elem   *rtype // map element (value) type
+        bucket *rtype // internal bucket structure
+        // function for hashing keys (ptr to key, seed) -> hash
+        hasher     func(unsafe.Pointer, uintptr) uintptr // go version <1.14 has no this field
+        keysize    uint8  // size of key slot
+        valuesize  uint8  // size of value slot
+        bucketsize uint16 // size of bucket
+        flags      uint32
     }
     '''
     def __init__(self, addr, type_parser, rtype):
@@ -922,8 +922,16 @@ class MapType():
         self.buck_size = 0
         self.flags = -1
         self.name = ""
-        #self.size = rtype.self_size + 4 * ADDR_SZ + 1 + 1 + 2 + 4
-        self.size = rtype.self_size + 3 * ADDR_SZ + 1 + 1 + 2 + 4
+        self.go_subver = 0
+        _debug("GOVER in map struct: %s" % common.GOVER)
+        if len(common.GOVER) > 0:
+            self.go_subver = int(common.GOVER.split(".")[1])
+            if self.go_subver >= 14:
+                self.size = rtype.self_size + 4 * ADDR_SZ + 1 + 1 + 2 + 4
+            else:
+                self.size = rtype.self_size + 3 * ADDR_SZ + 1 + 1 + 2 + 4
+        else:
+            self.size = rtype.self_size + 4 * ADDR_SZ + 1 + 1 + 2 + 4
 
     def parse(self):
         _debug("Map Type @ 0x%x" % self.addr)
@@ -947,31 +955,34 @@ class MapType():
         else:
             self.buck_type = self.type_parser.parse_type(type_addr=buck_type_addr)
 
-        self.key_size = idc.Byte(map_attr_addr + 3*ADDR_SZ) & 0xFF
-        self.val_size = idc.Byte(map_attr_addr + 3*ADDR_SZ + 1) & 0xFF
-        self.buck_size = read_mem(map_attr_addr + 3*ADDR_SZ + 2, forced_addr_sz=2) & 0xFFFF
-        self.flags = read_mem(map_attr_addr + 3*ADDR_SZ + 4, forced_addr_sz=4) & 0xFFFFFFFF
-
-        #self.hasher_func_addr = read_mem(map_attr_addr + 3*ADDR_SZ) & 0xFFFFFFFFFFFFFFFF
-        #self.key_size = idc.Byte(map_attr_addr + 4*ADDR_SZ) & 0xFF
-        #self.val_size = idc.Byte(map_attr_addr + 4*ADDR_SZ + 1) & 0xFF
-        #self.buck_size = read_mem(map_attr_addr + 4*ADDR_SZ + 2, forced_addr_sz=2) & 0xFFFF
-        #self.flags = read_mem(map_attr_addr + 4*ADDR_SZ + 4, forced_addr_sz=4) & 0xFFFFFFFF
+        if self.go_subver < 14:
+            self.key_size = idc.Byte(map_attr_addr + 3*ADDR_SZ) & 0xFF
+            self.val_size = idc.Byte(map_attr_addr + 3*ADDR_SZ + 1) & 0xFF
+            self.buck_size = read_mem(map_attr_addr + 3*ADDR_SZ + 2, forced_addr_sz=2) & 0xFFFF
+            self.flags = read_mem(map_attr_addr + 3*ADDR_SZ + 4, forced_addr_sz=4) & 0xFFFFFFFF
+        else:
+            self.hasher_func_addr = read_mem(map_attr_addr + 3*ADDR_SZ) & 0xFFFFFFFFFFFFFFFF
+            self.key_size = idc.Byte(map_attr_addr + 4*ADDR_SZ) & 0xFF
+            self.val_size = idc.Byte(map_attr_addr + 4*ADDR_SZ + 1) & 0xFF
+            self.buck_size = read_mem(map_attr_addr + 4*ADDR_SZ + 2, forced_addr_sz=2) & 0xFFFF
+            self.flags = read_mem(map_attr_addr + 4*ADDR_SZ + 4, forced_addr_sz=4) & 0xFFFFFFFF
 
         self.name = "map [%s]%s" % (self.key_type.name, self.elem_type.name)
 
         idc.MakeComm(map_attr_addr, "Key type: %s" % self.key_type.name)
         idc.MakeComm(map_attr_addr + ADDR_SZ, "Elem type: %s " % self.elem_type.name)
         idc.MakeComm(map_attr_addr + 2*ADDR_SZ, "Bucket type: %s" % self.buck_type.name)
-        idc.MakeComm(map_attr_addr + 3*ADDR_SZ, "Key size: 0x%x" % self.key_size)
-        idc.MakeComm(map_attr_addr + 3*ADDR_SZ + 1, "Value size: 0x%x" % self.val_size)
-        idc.MakeComm(map_attr_addr + 3*ADDR_SZ + 2, "Bucket size: 0x%x" % self.buck_size)
-        idc.MakeComm(map_attr_addr + 3*ADDR_SZ + 4, "Flags: 0x%x" % self.flags)
-        #idc.MakeComm(map_attr_addr + 3*ADDR_SZ, "hash function for hashing keys (ptr to key, seed) -> hash")
-        #idc.MakeComm(map_attr_addr + 4*ADDR_SZ, "Key size: 0x%x" % self.key_size)
-        #idc.MakeComm(map_attr_addr + 4*ADDR_SZ + 1, "Value size: 0x%x" % self.val_size)
-        #idc.MakeComm(map_attr_addr + 4*ADDR_SZ + 2, "Bucket size: 0x%x" % self.buck_size)
-        #idc.MakeComm(map_attr_addr + 4*ADDR_SZ + 4, "Flags: 0x%x" % self.flags)
+        if self.go_subver < 14:
+            idc.MakeComm(map_attr_addr + 3*ADDR_SZ, "Key size: 0x%x" % self.key_size)
+            idc.MakeComm(map_attr_addr + 3*ADDR_SZ + 1, "Value size: 0x%x" % self.val_size)
+            idc.MakeComm(map_attr_addr + 3*ADDR_SZ + 2, "Bucket size: 0x%x" % self.buck_size)
+            idc.MakeComm(map_attr_addr + 3*ADDR_SZ + 4, "Flags: 0x%x" % self.flags)
+        else:
+            idc.MakeComm(map_attr_addr + 3*ADDR_SZ, "hash function for hashing keys (ptr to key, seed) -> hash")
+            idc.MakeComm(map_attr_addr + 4*ADDR_SZ, "Key size: 0x%x" % self.key_size)
+            idc.MakeComm(map_attr_addr + 4*ADDR_SZ + 1, "Value size: 0x%x" % self.val_size)
+            idc.MakeComm(map_attr_addr + 4*ADDR_SZ + 2, "Bucket size: 0x%x" % self.buck_size)
+            idc.MakeComm(map_attr_addr + 4*ADDR_SZ + 4, "Flags: 0x%x" % self.flags)
         idaapi.autoWait()
 
         _debug("Map Key type: %s" % self.key_type.name)
