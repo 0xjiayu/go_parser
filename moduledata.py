@@ -87,41 +87,41 @@ class ModuleData():
     // moduledata is stored in statically allocated non-pointer memory;
     // none of the pointers here are visible to the garbage collector.
     type moduledata struct {
-    	pclntable    []byte
-    	ftab         []functab
-    	filetab      []uint32
-    	findfunctab  uintptr
-    	minpc, maxpc uintptr
+        pclntable    []byte
+        ftab         []functab
+        filetab      []uint32
+        findfunctab  uintptr
+        minpc, maxpc uintptr
 
-    	text, etext           uintptr
-    	noptrdata, enoptrdata uintptr
-    	data, edata           uintptr
-    	bss, ebss             uintptr
-    	noptrbss, enoptrbss   uintptr
-    	end, gcdata, gcbss    uintptr
-    	types, etypes         uintptr
+        text, etext           uintptr
+        noptrdata, enoptrdata uintptr
+        data, edata           uintptr
+        bss, ebss             uintptr
+        noptrbss, enoptrbss   uintptr
+        end, gcdata, gcbss    uintptr
+        types, etypes         uintptr
 
-    	textsectmap []textsect
-    	typelinks   []int32 // offsets from types
-    	itablinks   []*itab
+        textsectmap []textsect
+        typelinks   []int32 // offsets from types
+        itablinks   []*itab
 
-    	ptab []ptabEntry
+        ptab []ptabEntry
 
-    	pluginpath string
-    	pkghashes  []modulehash
+        pluginpath string
+        pkghashes  []modulehash
 
-    	modulename   string
-    	modulehashes []modulehash
+        modulename   string
+        modulehashes []modulehash
 
-    	hasmain uint8 // 1 if module contains the main function, 0 otherwise
+        hasmain uint8 // 1 if module contains the main function, 0 otherwise
 
-    	gcdatamask, gcbssmask bitvector
+        gcdatamask, gcbssmask bitvector
 
-    	typemap map[typeOff]*_type // offset to *_rtype in previous module
+        typemap map[typeOff]*_type // offset to *_rtype in previous module
 
-    	bad bool // module failed to load and should be ignored
+        bad bool // module failed to load and should be ignored
 
-    	next *moduledata
+        next *moduledata
     }
     '''
     def __init__(self, start_addr):

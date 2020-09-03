@@ -103,12 +103,22 @@ class Pclntbl():
         idaapi.autoWait()
         idc.MakeNameEx(self.func_tbl_addr, "pc0", flags=idaapi.SN_FORCE)
         idaapi.autoWait()
+
         for func_idx in xrange(self.func_num):
             curr_addr = self.func_tbl_addr + func_idx * 2 * self.ptr_sz
 
             func_addr = common.read_mem(curr_addr, forced_addr_sz=self.ptr_sz)
-            name_off = common.read_mem(curr_addr + self.ptr_sz, forced_addr_sz=self.ptr_sz)
+            if not idc.GetFunctionName(func_addr):
+                common._debug("Creating function @ %x" % func_addr)
+                idc.MakeUnkn(func_addr, idc.DOUNK_EXPAND)
+                idaapi.autoWait()
+                idc.MakeCode(func_addr)
+                idaapi.autoWait()
+                if idc.MakeFunction(func_addr):
+                    idaapi.autoWait()
+                    common._info("Create function @ 0x%x" % func_addr)
 
+            name_off = common.read_mem(curr_addr + self.ptr_sz, forced_addr_sz=self.ptr_sz)
             name_addr = self.start_addr + self.ptr_sz + name_off
             func_st_addr = name_addr - self.ptr_sz
             func_st = FuncStruct(func_st_addr, self)
@@ -194,19 +204,19 @@ class FuncStruct():
     // Keep in sync with linker (../cmd/link/internal/ld/pcln.go:/pclntab)
     // and with package debug/gosym and with symtab.go in package runtime.
     type _func struct {
-    	entry   uintptr // start pc
-    	nameoff int32   // function name
+        entry   uintptr // start pc
+        nameoff int32   // function name
 
-    	args        int32  // in/out args size
-    	deferreturn uint32 // offset of start of a deferreturn call instruction from entry, if any.
+        args        int32  // in/out args size
+        deferreturn uint32 // offset of start of a deferreturn call instruction from entry, if any.
 
-    	pcsp      int32
-    	pcfile    int32
-    	pcln      int32
-    	npcdata   int32
-    	funcID    funcID  // set for certain special runtime functions
-    	_         [2]int8 // unused
-    	nfuncdata uint8   // must be last
+        pcsp      int32
+        pcfile    int32
+        pcln      int32
+        npcdata   int32
+        funcID    funcID  // set for certain special runtime functions
+        _         [2]int8 // unused
+        nfuncdata uint8   // must be last
     }
     '''
     def __init__(self, addr, pclntbl):
