@@ -12,8 +12,16 @@ Inspired by [golang_loader_assist](https://github.com/strazzere/golang_loader_as
 2. Locate **pclntab**(PC Line Table) according to the **firstmoduledata** and parse it. Then find and parse and recover function names and source file paths in the pclntab. Source file paths will be printed in the output window of IDAPro；
 3. Parse strings and string pointers, make comment for each string, and make **dref** for each string pointer；
 4. According to firstmoduledata, find each **type** and parse it, meke comment for each attribute of **type**, which will be very convenient for malware researcher to analyze a complex type or data structure definition；
-5. Parse **itab**(Interface Table)；
-6. All those features above are valid for binaries built with **buildmode=pie**.
+5. Parse **itab**(Interface Table).
+
+Helpful information to RE work for Go binaries:
+
+![](./imgs/go_binary_info.png)
+
+And there are two useful feature in **go_parser**:
+
+1. It also work fine for binaries with malformed File Header information, especially malformed Section Headers information;
+2. All those features above are valid for binaries built with **buildmode=pie**.
 
 A config data structure in DDGMiner v5029 (MD5: 95199e8f1ab987cd8179a60834644663) parsing result as below：
 
