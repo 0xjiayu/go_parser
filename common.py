@@ -100,10 +100,20 @@ def get_goroot():
         retn
 
     2. True return(Which we needed):
+
+        (1). goroot string length as ptr
         mov     rax, cs:runtime_internal_sys_DefaultGoroot
         mov     rcx, cs:qword_D9AB58
         mov     [rsp+28h+arg_0], rax
         mov     [rsp+28h+arg_8], rcx
+        mov     rbp, [rsp+28h+var_8]
+        add     rsp, 28h
+        retn
+
+        (2). goroot string length as instant number
+        lea     rax, unk_7220B5
+        mov     [rsp+28h+arg_0], rax
+        mov     [rsp+28h+arg_8], 0Dh
         mov     rbp, [rsp+28h+var_8]
         add     rsp, 28h
         retn
@@ -123,11 +133,39 @@ def get_goroot():
                 o_near  =      7  # Immediate Near Address (CODE)        addr
                 ......
             '''
-            goroot_path_str_addr = read_mem(idc.GetOperandValue(goroot_flowchart[cb_idx].startEA, 1))
-            goroot_path_str = idc.GetString(goroot_path_str_addr)
+            goroot_path_len = 0
+            goroot_path_addr = 0
+
+            curr_addr = goroot_flowchart[cb_idx].startEA
+            goroot_path_addr_val = idc.GetOperandValue(curr_addr, 1)
+
+            end_addr = goroot_flowchart[cb_idx].endEA
+            curr_addr = idc.FindCode(curr_addr, idaapi.SEARCH_DOWN)
+            # find goroot path length and OpType of length(instant len number or addr of len)
+            while curr_addr <= end_addr:
+                len_optype = idc.GetOpType(curr_addr, 1)
+                if len_optype == 2:
+                    # addr of len
+                    # mov     rcx, cs:qword_D9AB58
+                    goroot_path_addr = read_mem(goroot_path_addr_val)
+                    goroot_path_len = read_mem(goroot_path_addr_val + ADDR_SZ)
+                    break
+                elif len_optype == 5:
+                    # instant number as len
+                    # mov     [rsp+28h+arg_8], 0Dh
+                    goroot_path_addr = goroot_path_addr_val
+                    goroot_path_len = idc.GetOperandValue(curr_addr, 1)
+
+                curr_addr = idc.FindCode(curr_addr, idaapi.SEARCH_DOWN)
+
+            if goroot_path_len == 0 or goroot_path_addr == 0:
+                raise Exception("Invalid GOROOT Address ang Length")
+
+            # goroot_path_str = idc.GetString(goroot_path_str_addr)
+            goroot_path_str = str(idc.GetManyBytes(goroot_path_addr, goroot_path_len))
             if goroot_path_str is None or len(goroot_path_str)==0:
                 raise Exception("Invalid GOROOT")
-            idc.MakeStr(goroot_path_str_addr, goroot_path_str_addr+len(goroot_path_str)+1)
+            idc.MakeStr(goroot_path_addr, goroot_path_addr+goroot_path_len)
             idaapi.autoWait()
             break
 
