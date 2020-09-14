@@ -43,13 +43,10 @@ def get_text_seg():
     return get_seg(['.text', '__text'])
 
 def find_func_by_name(func_name):
-    text_seg = get_text_seg()
-    if text_seg is None:
-        return None
-
-    for addr in idautils.Functions(text_seg.startEA, text_seg.endEA):
-        if func_name == idaapi.get_func_name(addr):
-            return idaapi.get_func(addr)
+    for segea in idautils.Segments():
+        for funcea in idautils.Functions(segea, idc.SegEnd(segea)):
+            if func_name == idaapi.get_func_name(funcea):
+                return idaapi.get_func(funcea)
     return None
 
 def read_mem(addr, forced_addr_sz=None, read_only=False):
@@ -155,13 +152,13 @@ def get_goroot():
                     # mov     [rsp+28h+arg_8], 0Dh
                     goroot_path_addr = goroot_path_addr_val
                     goroot_path_len = idc.GetOperandValue(curr_addr, 1)
+                    break
 
                 curr_addr = idc.FindCode(curr_addr, idaapi.SEARCH_DOWN)
 
             if goroot_path_len == 0 or goroot_path_addr == 0:
                 raise Exception("Invalid GOROOT Address ang Length")
 
-            # goroot_path_str = idc.GetString(goroot_path_str_addr)
             goroot_path_str = str(idc.GetManyBytes(goroot_path_addr, goroot_path_len))
             if goroot_path_str is None or len(goroot_path_str)==0:
                 raise Exception("Invalid GOROOT")
@@ -235,7 +232,7 @@ def get_goversion():
                     _debug(goversion_str)
                     if goversion_str.startswith("go"):
                         GOVER = goversion_str[2:]
-                        _info("Go version: %s" % GOVER)
+                        _info("\nGo version: %s\n" % GOVER)
                     else:
                         _debug("Invalid go string")
                 else:

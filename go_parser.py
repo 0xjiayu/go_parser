@@ -42,11 +42,11 @@ def main():
     common._info("Parsed %d strings\n" % parse_str_cnt)
 
     # parse data types
-    type_parser = types_builder.TypesParser(firstmoddata)
-    type_parser.build_all_types()
+    #type_parser = types_builder.TypesParser(firstmoddata)
+    #type_parser.build_all_types()
 
     # parse itabs
-    itab.parse_itab(firstmoddata, type_parser)
+    #itab.parse_itab(firstmoddata, type_parser)
 
 if __name__ == '__main__':
     main()

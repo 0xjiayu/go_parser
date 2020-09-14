@@ -29,6 +29,8 @@ def get_mdata_seg_addr():
     else:
         seg_start_addr = seg.start_ea
 
+    if seg_start_addr is None:
+        seg_start_addr = 0
     return seg_start_addr
 
 

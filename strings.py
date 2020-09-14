@@ -199,48 +199,51 @@ def create_offset(addr):
 def parse_strings():
     strings_added = 0
     retry = []
-    text_seg = common.get_text_seg()
-    if text_seg is None:
-        common._debug('Failed to get text segment')
-        return strings_added
+
+    #text_seg = common.get_text_seg()
+    #if text_seg is None:
+    #    common._debug('Failed to get text segment')
+    #    return strings_added
 
     # This may be inherently flawed as it will only search for defined functions
     # and as of IDA Pro 6.95 it fails to autoanalyze many GO functions, currently
     # this works well since we redefine/find (almost) all the functions prior to
     # this being used. Could be worth a strategy rethink later one or on diff archs
-    for addr in idautils.Functions(text_seg.startEA, text_seg.endEA):
-        name = idc.GetFunctionName(addr)
+    for segea in idautils.Segments():
+        for addr in idautils.Functions(segea, idc.SegEnd(segea)):
+    #for addr in idautils.Functions(text_seg.startEA, text_seg.endEA):
+            name = idc.GetFunctionName(addr)
 
-        end_addr = idautils.Chunks(addr).next()[1]
-        if(end_addr < addr):
-            common._error('Unable to find good end for the function %s' % name)
-            pass
+            end_addr = idautils.Chunks(addr).next()[1]
+            if(end_addr < addr):
+                common._error('Unable to find good end for the function %s' % name)
+                pass
 
-        common._debug('Found function %s starting/ending @ 0x%x 0x%x' %  (name, addr, end_addr))
+            common._debug('Found function %s starting/ending @ 0x%x 0x%x' %  (name, addr, end_addr))
 
-        while addr <= end_addr:
-            if parse_str_ptr(addr):
-                strings_added += 1
-                addr = idc.FindCode(addr, idaapi.SEARCH_DOWN)
-            elif is_string_patt(addr):
-                if 'rodata' not in idc.get_segm_name(addr) and 'text' not in idc.get_segm_name(addr):
-                    common._debug('Should a string be in the %s section?' % idc.get_segm_name(addr))
-                string_addr = idc.GetOperandValue(addr, 1)
-                addr_3 = idc.FindCode(idc.FindCode(addr, idaapi.SEARCH_DOWN), idaapi.SEARCH_DOWN)
-                string_len = idc.GetOperandValue(addr_3, 1)
-                if string_len > 1:
-                    if create_string(string_addr, string_len):
-                        if create_offset(addr):
-                            strings_added += 1
-                    else:
-                        # There appears to be something odd that goes on with IDA making some strings, always works
-                        # the second time, so lets just force a retry...
-                       retry.append((addr, string_addr, string_len))
+            while addr <= end_addr:
+                if parse_str_ptr(addr):
+                    strings_added += 1
+                    addr = idc.FindCode(addr, idaapi.SEARCH_DOWN)
+                elif is_string_patt(addr):
+                    if 'rodata' not in idc.get_segm_name(addr) and 'text' not in idc.get_segm_name(addr):
+                        common._debug('Should a string be in the %s section?' % idc.get_segm_name(addr))
+                    string_addr = idc.GetOperandValue(addr, 1)
+                    addr_3 = idc.FindCode(idc.FindCode(addr, idaapi.SEARCH_DOWN), idaapi.SEARCH_DOWN)
+                    string_len = idc.GetOperandValue(addr_3, 1)
+                    if string_len > 1:
+                        if create_string(string_addr, string_len):
+                            if create_offset(addr):
+                                strings_added += 1
+                        else:
+                            # There appears to be something odd that goes on with IDA making some strings, always works
+                            # the second time, so lets just force a retry...
+                           retry.append((addr, string_addr, string_len))
 
-                # Skip the extra mov lines since we know it won't be a load on any of them
-                addr = idc.FindCode(addr_3, idaapi.SEARCH_DOWN)
-            else:
-                addr = idc.FindCode(addr, idaapi.SEARCH_DOWN)
+                    # Skip the extra mov lines since we know it won't be a load on any of them
+                    addr = idc.FindCode(addr_3, idaapi.SEARCH_DOWN)
+                else:
+                    addr = idc.FindCode(addr, idaapi.SEARCH_DOWN)
 
     for instr_addr, string_addr, string_len in retry:
         if create_string(string_addr, string_len):
