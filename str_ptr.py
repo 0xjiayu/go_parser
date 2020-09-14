@@ -13,7 +13,6 @@ __email__ = ["jiayu0x@gmail.com"]
 import idc, idaapi
 idaapi.require("common")
 
-#ADDR_SZ = 8
 START_EA = 0x98C710
 END_EA = 0x990F58
 
