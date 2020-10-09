@@ -39,7 +39,9 @@ DDGMiner v5029 (MD5: 95199e8f1ab987cd8179a60834644663) 样本中核心的配置�
 - **strings.py**: 解析 strings 和 string pointers；
 - **moduldata.py**: 解析 **firstmoduledata**；
 - **types_builder.py**: 解析所有 **types** ；
-- **itab.py**: 解析 **itab**(Interface Table)；.
+- **itab.py**: 解析 **itab**(Interface Table)。
+
+另外， **str_ptr.py** 可以通过手动指定**字符串指针**数据的起始、结束位置来解析**字符串指针**。
 
 ### Note
 

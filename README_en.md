@@ -39,7 +39,9 @@ And the user-defined source file paths list:
 - **strings.py**: Parse strings 和 string pointers；
 - **moduldata.py**: Parse **firstmoduledata**；
 - **types_builder.py**: Parse **types** ；
-- **itab.py**: Parse **itab**(Interface Table)；.
+- **itab.py**: Parse **itab**(Interface Table).
+
+Additionally, the **str_ptr.py** will parse **string pointers** by specify the start address and end address of **string pointers** manually.
 
 ### Note
 
