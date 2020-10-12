@@ -1,52 +1,52 @@
 ## Yet Another Golang binary parser for IDAPro
 
-**中文 | [English](./README_en.md)**
+**Englist | [中文](./README_cn.md)**
 
 ----------------------------------------------------------------------
 
-受 [golang_loader_assist](https://github.com/strazzere/golang_loader_assist) 和 [jeb-golang-analyzer](https://github.com/pnfsoftware/jeb-golang-analyzer) 启发，为 IDAPro 写了一个更完备的 Go 二进制文件解析工具。
+Inspired by [golang_loader_assist](https://github.com/strazzere/golang_loader_assist) and [jeb-golang-analyzer](https://github.com/pnfsoftware/jeb-golang-analyzer), I wrote a more complete Go binaries parsing tool for IDAPro.
 
-### 核心功能：
+### Main Features：
 
-1. 自动定位 **firstmoduledata** 的位置并解析；
-2. 根据 firstmoduledata 中的信息定位到 **pclntab**(PC Line Table)，并从 pclntab 入手解析、恢复**函数符号**，抽取**源码文件列表**；
-3. 解析 **strings** 和 string **pointers**；
-4. 根据 firstmoduledata 中的信息，解析所有 **types** 并为 types 各种属性打上有意义的 comment 或 dref；
-5. 解析 **itab**(Interface Table)。
+1. Locate and parse **firstmoduledata** structure in Go binary file, and make comment for each field;
+2. Locate **pclntab**(PC Line Table) according to the **firstmoduledata** and parse it. Then find and parse and recover function names and source file paths in the pclntab. Source file paths will be printed in the output window of IDAPro；
+3. Parse strings and string pointers, make comment for each string, and make **dref** for each string pointer；
+4. According to firstmoduledata, find each **type** and parse it, meke comment for each attribute of **type**, which will be very convenient for malware researcher to analyze a complex type or data structure definition；
+5. Parse **itab**(Interface Table).
 
-Go 语言二进制文件中对逆向分析有帮助的信息如下：
+Helpful information to RE work for Go binaries:
 
 ![](./imgs/go_binary_info.png)
 
-另外，**go_parser** 还有两个很有用的特性：
+And there are two useful feature in **go_parser**:
 
-1. 以上功能对于 **buildmode=pie** 类型的 Go binary 文件依然有效；
-2. 对于文件头信息尤其是 Section Header 信息损坏的二进制文件依然有效。
+1. It also work fine for binaries with malformed File Header information, especially malformed Section Headers information;
+2. All those features above are valid for binaries built with **buildmode=pie**.
 
-DDGMiner v5029 (MD5: 95199e8f1ab987cd8179a60834644663) 样本中核心的配置文件 struct 解析结果示例如下：
+A config data structure in DDGMiner v5029 (MD5: 95199e8f1ab987cd8179a60834644663) parsing result as below：
 
 ![](./imgs/map_type_parse_eg.png)
 
-样本源码文件列表：
+And the user-defined source file paths list:
 
 ![](./imgs/srcfiles.png)
 
-### 文件列表：
+### Project files：
 
-- **go_parser.py** ：整套工具的入口文件，在 IDAPro 中 **[Alt+F7]** 组合键，执行此脚本；
-- **common.py**: 通用变量和函数定义；
-- **pclntbl.py**: 解析 **pclntab**(PC Line Table);
-- **strings.py**: 解析 strings 和 string pointers；
-- **moduldata.py**: 解析 **firstmoduledata**；
-- **types_builder.py**: 解析所有 **types** ；
-- **itab.py**: 解析 **itab**(Interface Table)。
+- **go_parser.py** ：Entry file, press **[Alt+F7]** , select and execute this file；
+- **common.py**: Common variables and functions definition；
+- **pclntbl.py**: Parse **pclntab**(PC Line Table);
+- **strings.py**: Parse strings 和 string pointers；
+- **moduldata.py**: Parse **firstmoduledata**；
+- **types_builder.py**: Parse **types** ；
+- **itab.py**: Parse **itab**(Interface Table).
 
-另外， **str_ptr.py** 可以通过手动指定**字符串指针**数据的起始、结束位置来解析**字符串指针**。
+Additionally, the **str_ptr.py** will parse **string pointers** by specify the start address and end address of **string pointers** manually.
 
 ### Note
 
-1. 此工具只在 IDA7.2/IDA7.0 上测试过，其他的 IDA 版本未经测试；
-2. strings 解析模块从 [golang_loader_assist](https://github.com/strazzere/golang_loader_assist) 移植过来，我自己又增加了 string pointers 解析的功能，目前只支持 x86 架构。
+1. This tool is written in Python2, and tested only on IDA7.2/IDA7.0；
+2. The strings parsing module was migrated from [golang_loader_assist](https://github.com/strazzere/golang_loader_assist), and I added the feature of string pointers parsing. It only supports x86(32bit & 64bit) architecture for now.
 
 ### Refer
 
