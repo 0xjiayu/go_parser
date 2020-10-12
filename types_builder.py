@@ -114,7 +114,7 @@ class TypesParser():
           raise Exception('Unknown type (kind:%s)' % rtype.get_kind())
 
         # process uncommon type, i.e. types with mothods
-        #if rtype.get_kind() != "Map" and rtype.is_uncomm():
+        # if rtype.get_kind() != "Map" and rtype.is_uncomm():
         if rtype.is_uncomm():
             prim_type = self.parsed_types[type_addr]
             uncomm_type = UncommonType(prim_type, self)
@@ -182,7 +182,7 @@ class RType():
         _debug("RType @ 0x%x" % self.addr)
         self.size = read_mem(self.addr)
         self.ptrdata = read_mem(self.addr + ADDR_SZ)
-        self.hash = read_mem(self.addr + 2*ADDR_SZ, forced_addr_sz = 4)
+        self.hash = read_mem(self.addr + 2*ADDR_SZ, forced_addr_sz=4) & 0xFFFFFFFF
         self.tflag = idc.Byte(self.addr + 2*ADDR_SZ + 4) & 0xFF
         self.align = idc.Byte(self.addr + 2*ADDR_SZ + 5) & 0xFF
         self.field_align = idc.Byte(self.addr + 2*ADDR_SZ + 6) & 0xFF
@@ -362,7 +362,7 @@ class Name():
             pkgpath_off_addr = self.addr + 3 + self.len
             if self.is_followed_by_tag:
                 pkgpath_off_addr += (self.tag_len + 2)
-            pkgpath_off = read_mem(pkgpath_off_addr, forced_addr_sz=4)
+            pkgpath_off = read_mem(pkgpath_off_addr, forced_addr_sz=4) & 0xFFFFFFFF
             if pkgpath_off > 0:
                 pkgpath_addr = self.moddata.types_addr + pkgpath_off
                 pkgpath_name_obj = Name(pkgpath_addr, self.moddata)
@@ -729,13 +729,13 @@ class IMethodType():
 
     def parse(self):
         _debug("Imethod Type @ 0x%x" % self.addr)
-        name_off = read_mem(self.addr, forced_addr_sz=4)
+        name_off = read_mem(self.addr, forced_addr_sz=4) & 0xFFFFFFFF
         name_addr = (self.types_addr + name_off) & 0xFFFFFFFF
         self.name_obj = Name(name_addr, self.type_parser.moddata)
         self.name_obj.parse(False)
         self.name = self.name_obj.simple_name
 
-        type_off = read_mem(self.addr+4, forced_addr_sz=4)
+        type_off = read_mem(self.addr+4, forced_addr_sz=4) & 0xFFFFFFFF
         type_addr = (self.types_addr + type_off) & 0xFFFFFFFF
         if type_off > 0 and type_addr != idc.BADADDR:
             if self.type_parser.has_been_parsed(type_addr):
@@ -961,7 +961,7 @@ class MapType():
             self.buck_size = read_mem(map_attr_addr + 3*ADDR_SZ + 2, forced_addr_sz=2) & 0xFFFF
             self.flags = read_mem(map_attr_addr + 3*ADDR_SZ + 4, forced_addr_sz=4) & 0xFFFFFFFF
         else:
-            self.hasher_func_addr = read_mem(map_attr_addr + 3*ADDR_SZ) & 0xFFFFFFFFFFFFFFFF
+            self.hasher_func_addr = read_mem(map_attr_addr + 3*ADDR_SZ)
             self.key_size = idc.Byte(map_attr_addr + 4*ADDR_SZ) & 0xFF
             self.val_size = idc.Byte(map_attr_addr + 4*ADDR_SZ + 1) & 0xFF
             self.buck_size = read_mem(map_attr_addr + 4*ADDR_SZ + 2, forced_addr_sz=2) & 0xFFFF
