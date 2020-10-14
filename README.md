@@ -2,7 +2,16 @@
 
 **中文 | [English](./README_en.md)**
 
+---------------------------------------------------------------------
+
+### python3版本使用说明
+
+此版本是在macos上 ida7.4+, python3.8.5 版本测试通过，如果在其他平台上测试存在问题，欢迎提issue或者pr。
+
+**In addition, it should be noted that ida7.4 on MacOS uses Python 3 installed by default, which may cause the third-party library installed by yourself to fail to load. You need to switch to Python installed by brew. Please refer to [this script](https://raw.githubusercontent.com/idapython/src/master/tools/patch-idapython-homebrew.sh) for specific switching methods.**
+
 ----------------------------------------------------------------------
+
 
 受 [golang_loader_assist](https://github.com/strazzere/golang_loader_assist) 和 [jeb-golang-analyzer](https://github.com/pnfsoftware/jeb-golang-analyzer) 启发，为 IDAPro 写了一个更完备的 Go 二进制文件解析工具。
 
@@ -39,13 +48,11 @@ DDGMiner v5029 (MD5: 95199e8f1ab987cd8179a60834644663) 样本中核心的配置�
 - **strings.py**: 解析 strings 和 string pointers；
 - **moduldata.py**: 解析 **firstmoduledata**；
 - **types_builder.py**: 解析所有 **types** ；
-- **itab.py**: 解析 **itab**(Interface Table)。
-
-另外， **str_ptr.py** 可以通过手动指定**字符串指针**数据的起始、结束位置来解析**字符串指针**。
+- **itab.py**: 解析 **itab**(Interface Table)；.
 
 ### Note
 
-1. 此工具只在 IDA7.2/IDA7.0 上测试过，其他的 IDA 版本未经测试；
+1. 此版本在 IDA7.4+,python3.8.5 上测试过，其他的 IDA 版本未经测试；
 2. strings 解析模块从 [golang_loader_assist](https://github.com/strazzere/golang_loader_assist) 移植过来，我自己又增加了 string pointers 解析的功能，目前只支持 x86 架构。
 
 ### Refer

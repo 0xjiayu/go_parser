@@ -2,6 +2,16 @@
 
 **[中文](./README.md) | English**
 
+
+---------------------------------------------------------------------
+
+### Instructions for Python3 branch
+
+This version is developed and tested on macos , ida7.4+ and python3.8.5,
+If there are problems on other platforms and version, you are welcomed to submit issue or pull requst.
+
+**另外需要注意，macos上ida7.4是使用系统默认安装的python3，这样可能导致自己安装的第三方库无法加载，需要切换到brew安装的python，具体的切换方法请参考[这个脚本](https://raw.githubusercontent.com/idapython/src/master/tools/patch-idapython-homebrew.sh)**
+
 ----------------------------------------------------------------------
 
 Inspired by [golang_loader_assist](https://github.com/strazzere/golang_loader_assist) and [jeb-golang-analyzer](https://github.com/pnfsoftware/jeb-golang-analyzer), I wrote a more complete Go binaries parsing tool for IDAPro.
@@ -39,9 +49,7 @@ And the user-defined source file paths list:
 - **strings.py**: Parse strings 和 string pointers；
 - **moduldata.py**: Parse **firstmoduledata**；
 - **types_builder.py**: Parse **types** ；
-- **itab.py**: Parse **itab**(Interface Table).
-
-Additionally, the **str_ptr.py** will parse **string pointers** by specify the start address and end address of **string pointers** manually.
+- **itab.py**: Parse **itab**(Interface Table)；.
 
 ### Note
 

@@ -50,15 +50,15 @@ class ItabElem():
 
             curr_addr += common.ADDR_SZ
 
-        idc.MakeComm(self.addr, "interface: %s" % self.itype.name)
-        idc.MakeComm(self.addr+common.ADDR_SZ, "rtype: %s" % self.rtype.name)
-        idc.MakeComm(self.addr+2*common.ADDR_SZ, "rtype hash")
-        idaapi.autoWait()
+        idc.set_cmt(self.addr, "interface: %s" % self.itype.name,0)
+        idc.set_cmt(self.addr+common.ADDR_SZ, "rtype: %s" % self.rtype.name,0)
+        idc.set_cmt(self.addr+2*common.ADDR_SZ, "rtype hash",0)
+        idaapi.auto_wait()
 
         itab_elem_name = "go_itab__%s_%s" % (self.rtype.name_obj.name_str, self.itype.name)
-        idc.MakeNameEx(self.addr, itab_elem_name,flags=idaapi.SN_FORCE)
+        idc.set_name(self.addr, itab_elem_name,flags=idaapi.SN_FORCE)
         common._debug("Go itab %s(@ 0x%x) parsed." % (itab_elem_name, self.addr))
-        idaapi.autoWait()
+        idaapi.auto_wait()
 
 def parse_itab(moddata, type_parser):
     common._info("Start to parse Itab")

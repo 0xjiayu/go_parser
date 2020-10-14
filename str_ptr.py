@@ -21,10 +21,10 @@ while curr_addr <= END_EA:
     curr_str_addr = common.read_mem(curr_addr)
     curr_str_len = common.read_mem(curr_addr + common.ADDR_SZ)
     if curr_str_addr > 0 and curr_str_addr != idc.BADADDR and curr_str_len > 1:
-        if idc.MakeStr(curr_str_addr, curr_str_addr + curr_str_len):
-            idaapi.autoWait()
+        if idc.create_strlit(curr_str_addr, curr_str_addr + curr_str_len):
+            idaapi.auto_wait()
 
-            curr_str = str(idc.GetManyBytes(curr_str_addr, curr_str_len))
+            curr_str = idc.get_bytes(curr_str_addr, curr_str_len).decode()
             print("@ 0x%x: %s" % (curr_str_addr, curr_str))
 
     curr_addr += 2 * common.ADDR_SZ

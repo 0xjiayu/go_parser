@@ -5,12 +5,11 @@ idaapi.require("moduledata")
 idaapi.require("common")
 from common import read_mem, ADDR_SZ
 from common import _debug, _error, _info
-
 import sys
 sys.setrecursionlimit(10000)
 
 STANDARD_PACKAGES = ['archive/tar', 'archive/zip', 'bufio', 'builtin', 'bytes', 'compress/bzip2', 'compress/flate', 'compress/gzip', 'compress/lzw', 'compress/zlib', 'container/heap', 'container/list', 'container/ring', 'context', 'crypto', 'crypto/aes', 'crypto/cipher', 'crypto/des', 'crypto/dsa', 'crypto/ecdsa', 'crypto/ed25519', 'crypto/elliptic', 'crypto/hmac', 'crypto/md5', 'crypto/rand', 'crypto/rc4', 'crypto/rsa', 'crypto/sha1', 'crypto/sha256', 'crypto/sha512', 'crypto/subtle', 'crypto/tls', 'crypto/x509', 'crypto/x509/pkix', 'database/sql', 'database/sql/driver', 'debug/dwarf', 'debug/elf', 'debug/gosym', 'debug/macho', 'debug/pe', 'debug/plan9obj', 'encoding', 'encoding/ascii85', 'encoding/asn1', 'encoding/base32', 'encoding/base64', 'encoding/binary', 'encoding/csv', 'encoding/gob', 'encoding/hex', 'encoding/json', 'encoding/pem', 'encoding/xml', 'errors', 'expvar', 'flag', 'fmt', 'go/ast', 'go/build', 'go/constant', 'go/doc', 'go/format', 'go/importer', 'go/parser', 'go/printer', 'go/scanner', 'go/token', 'go/types', 'hash', 'hash/adler32', 'hash/crc32', 'hash/crc64', 'hash/fnv', 'html', 'html/template', 'image', 'image/color', 'image/color/palette', 'image/draw', 'image/gif', 'image/jpeg', 'image/png', 'index/suffixarray', 'io', 'io/ioutil', 'log', 'log/syslog', 'math', 'math/big', 'math/bits', 'math/cmplx', 'math/rand', 'mime', 'mime/multipart', 'mime/quotedprintable', 'net', 'net/http', 'net/http/cgi', 'net/http/cookiejar', 'net/http/fcgi', 'net/http/httptest', 'net/http/httptrace', 'net/http/httputil', 'net/http/pprof', 'net/mail', 'net/rpc', 'net/rpc/jsonrpc', 'net/smtp', 'net/textproto', 'net/url', 'os', 'os/exec', 'os/signal', 'os/user', 'path', 'path/filepath', 'plugin', 'reflect', 'regexp', 'regexp/syntax', 'runtime', 'runtime/cgo', 'runtime/debug', 'runtime/pprof', 'runtime/race', 'runtime/trace', 'sort', 'strconv', 'strings', 'sync', 'sync/atomic', 'syscall', 'syscall/js', 'testing', 'testing/iotest', 'testing/quick', 'text/scanner', 'text/tabwriter', 'text/template', 'text/template/parse', 'time', 'unicode', 'unicode/utf16', 'unicode/utf8', 'unsafe']
-
+import IPython
 
 class TypesParser():
     '''
@@ -29,15 +28,16 @@ class TypesParser():
 
     def build_all_types(self, depth=1):
         _info("Building all types...")
-        for idx in xrange(self.moddata.type_num):
+        _info("Typelinks address is {}.".format(hex(self.moddata.typelink_addr)))
+        for idx in range(self.moddata.type_num):
             type_off = read_mem(self.moddata.typelink_addr + idx*4, forced_addr_sz=4) & 0xFFFFFFFF
             if type_off == 0:
                 continue
             type_addr = self.moddata.types_addr + type_off
-            idc.MakeComm(self.moddata.typelink_addr + idx*4, "type @ 0x%x" % type_addr)
-            idaapi.autoWait()
+            idc.set_cmt(self.moddata.typelink_addr + idx*4, "type @ 0x%x" % type_addr,0)
+            idaapi.auto_wait()
             _debug("%dth type, offset: 0x%x, addr: 0x%x" % (idx+1, type_off, type_addr))
-
+            # print("%dth type, offset: 0x%x, addr: 0x%x" % (idx+1, type_off, type_addr))
             if type_addr in self.parsed_types.keys():
                 _debug("  "*depth + 'already parsed')
                 continue
@@ -183,10 +183,10 @@ class RType():
         self.size = read_mem(self.addr)
         self.ptrdata = read_mem(self.addr + ADDR_SZ)
         self.hash = read_mem(self.addr + 2*ADDR_SZ, forced_addr_sz = 4)
-        self.tflag = idc.Byte(self.addr + 2*ADDR_SZ + 4) & 0xFF
-        self.align = idc.Byte(self.addr + 2*ADDR_SZ + 5) & 0xFF
-        self.field_align = idc.Byte(self.addr + 2*ADDR_SZ + 6) & 0xFF
-        self.kind = idc.Byte(self.addr + 2*ADDR_SZ + 7) & 0xFF & RType.KIND_MASK
+        self.tflag = idc.get_wide_byte(self.addr + 2*ADDR_SZ + 4) & 0xFF
+        self.align = idc.get_wide_byte(self.addr + 2*ADDR_SZ + 5) & 0xFF
+        self.field_align = idc.get_wide_byte(self.addr + 2*ADDR_SZ + 6) & 0xFF
+        self.kind = idc.get_wide_byte(self.addr + 2*ADDR_SZ + 7) & 0xFF & RType.KIND_MASK
         self.alg = read_mem(self.addr + 2*ADDR_SZ + 8)
         self.gcdata = read_mem(self.addr + 3*ADDR_SZ + 8)
 
@@ -194,12 +194,13 @@ class RType():
         self.name_addr = (self.moddata.types_addr + self.name_off) & 0xFFFFFFFF
 
         self.ptrtothis_off = read_mem(self.addr + 4*ADDR_SZ + 12, forced_addr_sz=4) & 0xFFFFFFFF
+
         if self.ptrtothis_off > 0:
             self.ptrtothis_addr = (self.moddata.types_addr + self.ptrtothis_off) & 0xFFFFFFFF
 
-        idc.MakeComm(self.addr, "type size")
-        idc.MakeComm(self.addr + ADDR_SZ, "type ptrdata")
-        idc.MakeComm(self.addr + 2*ADDR_SZ, "type hash")
+        idc.set_cmt(self.addr, "type size",0)
+        idc.set_cmt(self.addr + ADDR_SZ, "type ptrdata",0)
+        idc.set_cmt(self.addr + 2*ADDR_SZ, "type hash",0)
 
         tflag_comm = "tflag:"
         if self.has_star_prefix():
@@ -208,28 +209,26 @@ class RType():
             tflag_comm += " Named;"
         if self.is_uncomm():
             tflag_comm += " Uncommon"
-        idc.MakeComm(self.addr + 2*ADDR_SZ + 4, tflag_comm)
+        idc.set_cmt(self.addr + 2*ADDR_SZ + 4, tflag_comm,0)
         _debug(tflag_comm)
 
-        idc.MakeComm(self.addr + 2*ADDR_SZ + 5, "align")
-        idc.MakeComm(self.addr + 2*ADDR_SZ + 6, "field align")
-        idc.MakeComm(self.addr + 2*ADDR_SZ + 7, "kind: %s" % self.get_kind())
-        idc.MakeComm(self.addr + 2*ADDR_SZ + 8, "alg")
-        idc.MakeComm(self.addr + 3*ADDR_SZ + 8, "gcdata")
+        idc.set_cmt(self.addr + 2*ADDR_SZ + 5, "align",0)
+        idc.set_cmt(self.addr + 2*ADDR_SZ + 6, "field align",0)
+        idc.set_cmt(self.addr + 2*ADDR_SZ + 7, "kind: %s" % self.get_kind(),0)
+        idc.set_cmt(self.addr + 2*ADDR_SZ + 8, "alg",0)
+        idc.set_cmt(self.addr + 3*ADDR_SZ + 8, "gcdata",0)
         _debug("kind: %s" % self.get_kind())
 
         if self.ptrtothis_off > 0:
-            idc.MakeComm(self.addr + 4*ADDR_SZ + 12, "ptrtothis addr: 0x%x" % self.ptrtothis_addr)
-            _debug("ptrtothis addr: 0x%x" % self.ptrtothis_addr)
+            idc.set_cmt(self.addr + 4*ADDR_SZ + 12, "ptrtothis addr: 0x%x" % self.ptrtothis_addr,0)
         else:
-            idc.MakeComm(self.addr + 4*ADDR_SZ + 12, "ptrtothis addr")
-        idaapi.autoWait()
+            idc.set_cmt(self.addr + 4*ADDR_SZ + 12, "ptrtothis addr",0)
+        idaapi.auto_wait()
 
         self.name_obj = Name(self.name_addr, self.moddata)
         self.name_obj.parse(self.has_star_prefix())
         self.name = self.name_obj.simple_name
-
-        idc.MakeComm(self.addr + 4*ADDR_SZ + 8, "name(@ 0x%x ): %s" % (self.name_addr, self.name_obj.orig_name_str))
+        idc.set_cmt(self.addr + 4*ADDR_SZ + 8, "name(@ 0x%x ): %s" % (self.name_addr, self.name_obj.orig_name_str),0)
         _debug("name(@ 0x%x ): %s" % (self.name_addr, self.name_obj.orig_name_str))
 
         # if a raw type is un-named, and name string is erased, the name it as it's kind string
@@ -250,8 +249,8 @@ class RType():
             self.name += "_ptr"
 
         if len(self.name) > 0:
-            idc.MakeNameEx(self.addr, self.name, flags=idaapi.SN_FORCE)
-            idaapi.autoWait()
+            idc.set_name(self.addr, self.name, flags=idaapi.SN_FORCE)
+            idaapi.auto_wait()
 
         # parse type pointer
         if self.ptrtothis_off > 0 and self.ptrtothis_addr != idc.BADADDR:
@@ -259,8 +258,9 @@ class RType():
                 self.ptrtothis = self.type_parser.parsed_types[self.ptrtothis_addr]
             else:
                 self.ptrtothis = self.type_parser.parse_type(type_addr=self.ptrtothis_addr)
-            idaapi.autoWait()
+            idaapi.auto_wait()
 
+        _debug("RType @ 0x%x parse finished." % self.addr)
     def get_kind(self):
         return self.TYPE_KINDS[self.kind]
 
@@ -333,13 +333,14 @@ class Name():
         self.tag_len = 0
 
     def parse(self, has_star_prefix):
-        flag_byte = idc.Byte(self.addr) & 0xFF
+        _debug("Name Type @ 0x%x" % self.addr)
+        flag_byte = idc.get_wide_byte(self.addr) & 0xFF
         self.is_exported = flag_byte & self.EXPORTED != 0
         self.is_followed_by_tag = flag_byte & self.FOLLOWED_BY_TAG != 0
         self.is_followed_by_pkgpath = flag_byte & self.FOLLOWED_BY_PKGPATH != 0
 
-        self.len = ((idc.Byte(self.addr + 1) & 0xFF << 8) | (idc.Byte(self.addr + 2) & 0xFF)) & 0xFFFF
-        self.orig_name_str = str(idc.GetManyBytes(self.addr + 3, self.len))
+        self.len = ((idc.get_wide_byte(self.addr + 1) & 0xFF << 8) | (idc.get_wide_byte(self.addr + 2) & 0xFF)) & 0xFFFF
+        self.orig_name_str = 'None' if self.len ==0 else idc.get_bytes(self.addr + 3, self.len).decode()
         self.name_str = self.orig_name_str
         # delete star_prefix:
         while True:
@@ -349,9 +350,9 @@ class Name():
                 break
 
         if self.is_followed_by_tag:
-            self.tag_len = (idc.Byte(self.addr+ 3 + self.len) & 0xFF << 8) \
-                | (idc.Byte(self.addr + 3 + self.len + 1) & 0xFF)
-            self.tag = str(idc.GetManyBytes(self.addr + 3 + self.len + 2, self.tag_len))
+            self.tag_len = (idc.get_wide_byte(self.addr+ 3 + self.len) & 0xFF << 8) \
+                | (idc.get_wide_byte(self.addr + 3 + self.len + 1) & 0xFF)
+            self.tag = idc.get_bytes(self.addr + 3 + self.len + 2, self.tag_len).decode()
 
         # if name was reased, the replace name string with tag string
         if (not self.name_str or len(self.name_str) == 0) and self.tag and self.tag_len > 0:
@@ -363,16 +364,20 @@ class Name():
             if self.is_followed_by_tag:
                 pkgpath_off_addr += (self.tag_len + 2)
             pkgpath_off = read_mem(pkgpath_off_addr, forced_addr_sz=4)
-            if pkgpath_off > 0:
+            _debug("pkgpath_off : {}".format( hex(pkgpath_off)))
+            if pkgpath_off > 0: # if error return 0xffffffff 
+            # if c_int(pkgpath_off).value > 0:
                 pkgpath_addr = self.moddata.types_addr + pkgpath_off
                 pkgpath_name_obj = Name(pkgpath_addr, self.moddata)
+                _debug("pkgpath_addr: {}".format(hex(pkgpath_addr)))
+                # idc.auto_wait()
                 pkgpath_name_obj.parse(False)
                 self.pkg = pkgpath_name_obj.name_str
                 self.pkg_len = len(self.pkg)
 
                 if self.pkg_len:
-                    idc.MakeComm(pkgpath_off_addr, "pkgpath(@ 0x%x): %s" % (pkgpath_addr, self.pkg))
-                    idaapi.autoWait()
+                    idc.set_cmt(pkgpath_off_addr, "pkgpath(@ 0x%x): %s" % (pkgpath_addr, self.pkg),0)
+                    idaapi.auto_wait()
 
         self.full_name = "%s%s%s" % (self.pkg if self.pkg else "", ("_%s" % self.name_str) \
             if self.pkg else self.name_str, ('_%s' % self.tag) if self.tag else "")
@@ -393,15 +398,15 @@ class Name():
             else:
                 flag_comm_str += "followed by pkgpath"
         if len(flag_comm_str) > 6: # has valid flag
-            idc.MakeComm(self.addr, flag_comm_str)
-            idaapi.autoWait()
+            idc.set_cmt(self.addr, flag_comm_str,0)
+            idaapi.auto_wait()
 
-        idc.MakeStr(self.addr + 3, self.addr + 3 + self.len)
-        idaapi.autoWait()
+        idc.create_strlit(self.addr + 3, self.addr + 3 + self.len)
+        idaapi.auto_wait()
         if self.is_followed_by_tag:
-            idc.MakeStr(self.addr + 3 + self.len + 2, self.addr + 3 + self.len + 2 + self.tag_len)
-            idc.MakeComm(self.addr + 3 + self.len + 2, "tag of @ 0x%x" % self.addr)
-            idaapi.autoWait()
+            idc.create_strlit(self.addr + 3 + self.len + 2, self.addr + 3 + self.len + 2 + self.tag_len)
+            idc.set_cmt(self.addr + 3 + self.len + 2, "tag of @ 0x%x" % self.addr,0)
+            idaapi.auto_wait()
 
 class PtrType():
     '''
@@ -435,10 +440,10 @@ class PtrType():
         if self.target_rtype:
             self.name = self.target_rtype.name + "_ptr"
 
-        idc.MakeComm(self.addr + self.rtype.self_size, "target rtype: %s" % self.target_rtype_origname)
-        idaapi.autoWait()
+        idc.set_cmt(self.addr + self.rtype.self_size, "target rtype: %s" % self.target_rtype_origname,0)
+        idaapi.auto_wait()
         _debug("target rtype: %s" % self.target_rtype_origname)
-
+        _debug("PtrType @ 0x%x parse finished." % self.addr)
     def __str__(self):
         return self.name
 
@@ -469,6 +474,7 @@ class StructType():
         # parse pkg path
         self.pkg_path_addr = read_mem(self.addr + self.rtype.self_size)
         if self.pkg_path_addr > 0 and self.pkg_path_addr != idc.BADADDR:
+            _debug("self.pkg_path_addr {}.".format(hex(self.pkg_path_addr)))
             self.pkg_path_obj = Name(self.pkg_path_addr, self.type_parser.moddata)
             self.pkg_path_obj.parse(False)
             self.pkg_path = self.pkg_path_obj.simple_name
@@ -477,26 +483,26 @@ class StructType():
         fields_start_addr = read_mem(self.addr + self.rtype.self_size + ADDR_SZ)
         fields_cnt = read_mem(self.addr + self.rtype.self_size + 2*ADDR_SZ)
         fields_cap = read_mem(self.addr + self.rtype.self_size + 3*ADDR_SZ)
-        for idx in xrange(fields_cnt):
+        for idx in range(fields_cnt):
             field = StructFiled(fields_start_addr + idx*3*ADDR_SZ, self.type_parser)
             field.parse()
             self.fields.append(field)
 
-        idc.MakeComm(self.addr + self.rtype.self_size, "pkg path%s" % \
-            (("(@ 0x%x): %s" % (self.pkg_path_addr, self.pkg_path)) if (self.pkg_path_addr>0 and len(self.pkg_path)>0) else ""))
-        idc.MakeComm(self.addr + self.rtype.self_size + 2*ADDR_SZ, "fields count: 0x%x" % fields_cnt)
-        idc.MakeComm(self.addr + self.rtype.self_size + 3*ADDR_SZ, "fileds capacity: 0x%x" % fields_cap)
-        idaapi.autoWait()
+        idc.set_cmt(self.addr + self.rtype.self_size, "pkg path%s" % \
+            (("(@ 0x%x): %s" % (self.pkg_path_addr, self.pkg_path)) if (self.pkg_path_addr>0 and len(self.pkg_path)>0) else ""),0)
+        idc.set_cmt(self.addr + self.rtype.self_size + 2*ADDR_SZ, "fields count: 0x%x" % fields_cnt,0)
+        idc.set_cmt(self.addr + self.rtype.self_size + 3*ADDR_SZ, "fileds capacity: 0x%x" % fields_cap,0)
+        idaapi.auto_wait()
         _debug("Struct pkg path: %s" % (("(@ 0x%x): %s" % (self.pkg_path_addr, self.pkg_path)) \
             if (self.pkg_path_addr>0 and len(self.pkg_path)>0) else ""))
         _debug("Struct fields num: 0x%x" % fields_cnt)
 
         if len(self.rtype.name) > 0 and fields_cnt > 0:
-            idc.MakeComm(self.addr + self.rtype.self_size + ADDR_SZ, "fields start address")
-            idc.MakeNameEx(fields_start_addr, "%s_fields" % self.rtype.name, flags=idaapi.SN_FORCE)
-            idaapi.autoWait()
+            idc.set_cmt(self.addr + self.rtype.self_size + ADDR_SZ, "fields start address",0)
+            idc.set_name(fields_start_addr, "%s_fields" % self.rtype.name, flags=idaapi.SN_FORCE)
+            idaapi.auto_wait()
             _debug("Struct fields start addr: 0x%x" % fields_start_addr)
-
+        _debug("Struct Type @ 0x%x parse finished." % self.addr)
     def __str__(self):
         if self.rtype:
             ret_str = "> Struct: %s ( %d fields)\n" % (self.rtype.name, len(self.fields))
@@ -530,6 +536,7 @@ class StructFiled():
         self.size = 3 * ADDR_SZ
 
     def parse(self):
+        _debug("Struct StructFiled @ 0x%x" % self.addr)
         self.name_obj_addr = read_mem(self.addr)
         if self.name_obj_addr == 0 or self.name_obj_addr == idc.BADADDR:
             raise Exception("Invalid name address when parsing struct field @ 0x%x" % self.addr)
@@ -549,13 +556,13 @@ class StructFiled():
         self.offset = off_embeded >> 1
         self.is_embeded = (off_embeded & 1) != 0
 
-        idc.MakeComm(self.addr, "field name: %s" % self.name_obj.name_str)
-        idaapi.autoWait()
-        idc.MakeComm(self.addr + ADDR_SZ, "field rtype: %s" % self.rtype.name)
-        idaapi.autoWait()
+        idc.set_cmt(self.addr, "field name: %s" % self.name_obj.name_str,0)
+        idaapi.auto_wait()
+        idc.set_cmt(self.addr + ADDR_SZ, "field rtype: %s" % self.rtype.name,0)
+        idaapi.auto_wait()
         _debug("Struct field name: %s" % self.name_obj.name_str)
         _debug("Struct field rtype: %s" % self.rtype.name)
-
+        _debug("Struct StructFiled @ 0x%x parse finished." % self.addr)
     def __str__(self):
         return self.name
 
@@ -597,14 +604,14 @@ class ArrayType():
 
         self.len = read_mem(self.addr + self.rtype.self_size + 2 * ADDR_SZ)
 
-        idc.MakeComm(self.addr + self.rtype.self_size, "elem type: %s" % self.elem_type.name)
-        idc.MakeComm(self.addr + self.rtype.self_size + ADDR_SZ, "slice type: %s" % self.slice_type.name)
-        idc.MakeComm(self.addr + self.rtype.self_size + 2 * ADDR_SZ, "array length: %d" % self.len)
-        idc.MakeNameEx(self.addr, "%s_array" % self.elem_type.name, flags=idaapi.SN_FORCE)
-        idaapi.autoWait()
+        idc.set_cmt(self.addr + self.rtype.self_size, "elem type: %s" % self.elem_type.name,0)
+        idc.set_cmt(self.addr + self.rtype.self_size + ADDR_SZ, "slice type: %s" % self.slice_type.name,0)
+        idc.set_cmt(self.addr + self.rtype.self_size + 2 * ADDR_SZ, "array length: %d" % self.len,0)
+        idc.set_name(self.addr, "%s_array" % self.elem_type.name, flags=idaapi.SN_FORCE)
+        idaapi.auto_wait()
         _debug("Array elem type: %s" % self.elem_type.name)
         _debug("Array slice type: %s" % self.slice_type.name)
-
+        _debug("Array Type @ 0x%x parse finished." % self.addr)
     def __str__(self):
         return "%s array(len: %d)" % (self.elem_type.name, self.len)
 
@@ -627,17 +634,18 @@ class SliceType():
 
     def parse(self):
         _debug("Slice Type @ 0x%x" % self.addr)
+        
         self.elem_type_addr = read_mem(self.addr + self.rtype.self_size)
         if self.type_parser.has_been_parsed(self.elem_type_addr):
             self.elem_rtype = self.type_parser.parsed_types[self.elem_type_addr]
         else:
             self.elem_rtype = self.type_parser.parse_type(type_addr=self.elem_type_addr)
 
-        idc.MakeComm(self.addr + self.rtype.self_size, "elem rtype: %s" % self.elem_rtype.name)
-        idc.MakeNameEx(self.addr, "%s_slice" % self.elem_rtype.name, flags=idaapi.SN_FORCE)
-        idaapi.autoWait()
+        idc.set_cmt(self.addr + self.rtype.self_size, "elem rtype: %s" % self.elem_rtype.name,0)
+        idc.set_name(self.addr, "%s_slice" % self.elem_rtype.name, flags=idaapi.SN_FORCE)
+        idaapi.auto_wait()
         _debug("Slice elem rtype: %s" % self.elem_rtype.name)
-
+        _debug("Slice Type @ 0x%x parse finished." % self.addr)
     def __str__(self):
         if self.elem_rtype:
             return "Slice %s" % self.elem_rtype.name
@@ -679,25 +687,25 @@ class InterfaceType():
         methods_start_addr = read_mem(self.addr + self.rtype.self_size + ADDR_SZ)
         methods_cnt = read_mem(self.addr + self.rtype.self_size + 2*ADDR_SZ)
         methods_cap = read_mem(self.addr + self.rtype.self_size + 3*ADDR_SZ)
-        for idx in xrange(methods_cnt):
+        for idx in range(methods_cnt):
             imeth = IMethodType(methods_start_addr + idx*2*4, self.type_parser)
             imeth.parse()
             self.methods.append(imeth)
 
-        idc.MakeComm(self.addr + self.rtype.self_size, "pkg path%s" % \
-            (("(@ 0x%x): %s" % (self.pkg_path_addr, self.pkg_path)) if (self.pkg_path_addr>0 and len(self.pkg_path)>0) else ""))
-        idc.MakeComm(self.addr + self.rtype.self_size + 2*ADDR_SZ, "methods count: 0x%x" % methods_cnt)
-        idc.MakeComm(self.addr + self.rtype.self_size + 3*ADDR_SZ, "methods capacity: 0x%x" % methods_cap)
-        idaapi.autoWait()
+        idc.set_cmt(self.addr + self.rtype.self_size, "pkg path%s" % \
+            (("(@ 0x%x): %s" % (self.pkg_path_addr, self.pkg_path)) if (self.pkg_path_addr>0 and len(self.pkg_path)>0) else ""),0)
+        idc.set_cmt(self.addr + self.rtype.self_size + 2*ADDR_SZ, "methods count: 0x%x" % methods_cnt,0)
+        idc.set_cmt(self.addr + self.rtype.self_size + 3*ADDR_SZ, "methods capacity: 0x%x" % methods_cap,0)
+        idaapi.auto_wait()
 
         _debug("Interface pkg path%s" % \
             (("(@ 0x%x): %s" % (self.pkg_path_addr, self.pkg_path)) if (self.pkg_path_addr>0 and len(self.pkg_path)>0) else ""))
         _debug("Interface methods count: 0x%x" % methods_cnt)
 
         if len(self.rtype.name) > 0:
-            idc.MakeNameEx(methods_start_addr, "%s_methods" % self.rtype.name, flags=idaapi.SN_FORCE)
-            idaapi.autoWait()
-
+            idc.set_name(methods_start_addr, "%s_methods" % self.rtype.name, flags=idaapi.SN_FORCE)
+            idaapi.auto_wait()
+        _debug("Interface @ 0x%x parse finished." % self.addr)
     def __str__(self):
         if self.rtype:
             ret_str = "> Interface: %s ( %d methods)\n" % (self.rtype.name, len(self.methods))
@@ -744,14 +752,15 @@ class IMethodType():
                 self.type = self.type_parser.parse_type(type_addr=type_addr)
 
         if name_off > 0 and name_off != idc.BADADDR:
-            idc.MakeComm(self.addr, "imethod name(@ 0x%x): %s" % (name_addr, self.name))
-            idaapi.autoWait()
+            idc.set_cmt(self.addr, "imethod name(@ 0x%x): %s" % (name_addr, self.name),0)
+            idaapi.auto_wait()
             _debug("Interface imethod name(@ 0x%x): %s" % (name_addr, self.name))
 
         if type_off > 0 and type_addr != idc.BADADDR:
-            idc.MakeComm(self.addr + 4, "imethod type(@ 0x%x): %s" % (type_addr, self.type.name_obj.name_str))
-            idaapi.autoWait()
+            idc.set_cmt(self.addr + 4, "imethod type(@ 0x%x): %s" % (type_addr, self.type.name_obj.name_str),0)
+            idaapi.auto_wait()
             _debug("Interface imethod type(@ 0x%x): %s" % (type_addr, self.type.name_obj.name_str))
+        _debug("Imethod Type @ 0x%x parsed finished." % self.addr)
 
     def __str__(self):
         if self.name:
@@ -796,9 +805,10 @@ class ChanType():
 
         self.name = "channel %s (direction: %s)" % (self.rtype.name, self.direction)
 
-        idc.MakeComm(self.addr + self.rtype.self_size, "elem type: %s" % self.elem_type.name)
-        idc.MakeComm(self.addr + self.rtype.self_size + ADDR_SZ, "chan direction: %s" % self.direction)
-        idaapi.autoWait()
+        idc.set_cmt(self.addr + self.rtype.self_size, "elem type: %s" % self.elem_type.name,0)
+        idc.set_cmt(self.addr + self.rtype.self_size + ADDR_SZ, "chan direction: %s" % self.direction,0)
+        idaapi.auto_wait()
+        _debug("Channel Type @ 0x%x parse finished." % self.addr)
 
     def get_direction(self, dir_code):
         if dir_code == self.RECV_DIR:
@@ -857,7 +867,7 @@ class FuncType():
         if self.rtype.is_uncomm():
             curr_addr += UncommonType.SIZE
 
-        for in_idx in xrange(self.para_cnt):
+        for in_idx in range(self.para_cnt):
             curr_para_type = None
             curr_para_type_off = curr_addr + in_idx*ADDR_SZ
             para_type_addr = read_mem(curr_para_type_off)
@@ -867,10 +877,10 @@ class FuncType():
             else:
                 curr_para_type = self.type_parser.parse_type(type_addr=para_type_addr)
             self.para_types.append(curr_para_type)
-            idaapi.autoWait()
+            idaapi.auto_wait()
 
         curr_addr += self.para_cnt * ADDR_SZ
-        for out_idx in xrange(self.ret_cnt):
+        for out_idx in range(self.ret_cnt):
             curr_ret_type = None
             curr_ret_type_off = curr_addr + out_idx*ADDR_SZ
             ret_type_addr = read_mem(curr_ret_type_off)
@@ -880,13 +890,13 @@ class FuncType():
             else:
                 curr_ret_type = self.type_parser.parse_type(type_addr=ret_type_addr)
             self.ret_types.append(curr_ret_type)
-            idaapi.autoWait()
+            idaapi.auto_wait()
 
-        idc.MakeComm(self.addr + self.rtype.self_size, "Parameter count: %d" % self.para_cnt)
-        idc.MakeComm(self.addr + self.rtype.self_size + 2, "%s%s" % ("Flag: Varidic;" \
-            if self.ret_cnt & FuncType.VARIADIC_FLAG else "", "Return value count: %d" % self.ret_cnt))
-        idaapi.autoWait()
-
+        idc.set_cmt(self.addr + self.rtype.self_size, "Parameter count: %d" % self.para_cnt,0)
+        idc.set_cmt(self.addr + self.rtype.self_size + 2, "%s%s" % ("Flag: Varidic;" \
+            if self.ret_cnt & FuncType.VARIADIC_FLAG else "", "Return value count: %d" % self.ret_cnt),0)
+        idaapi.auto_wait()
+        _debug("Func Type @ 0x%x parse finished." % self.addr)
     def __str__(self):
         return "> func %s (para: %d %s  -  return: %d)\n" % (self.rtype.name, self.para_cnt, \
             "+ [...]" if self.is_variadic else "", self.ret_cnt)
@@ -956,37 +966,38 @@ class MapType():
             self.buck_type = self.type_parser.parse_type(type_addr=buck_type_addr)
 
         if self.go_subver < 14:
-            self.key_size = idc.Byte(map_attr_addr + 3*ADDR_SZ) & 0xFF
-            self.val_size = idc.Byte(map_attr_addr + 3*ADDR_SZ + 1) & 0xFF
+            self.key_size = idc.get_wide_byte(map_attr_addr + 3*ADDR_SZ) & 0xFF
+            self.val_size = idc.get_wide_byte(map_attr_addr + 3*ADDR_SZ + 1) & 0xFF
             self.buck_size = read_mem(map_attr_addr + 3*ADDR_SZ + 2, forced_addr_sz=2) & 0xFFFF
             self.flags = read_mem(map_attr_addr + 3*ADDR_SZ + 4, forced_addr_sz=4) & 0xFFFFFFFF
         else:
             self.hasher_func_addr = read_mem(map_attr_addr + 3*ADDR_SZ) & 0xFFFFFFFFFFFFFFFF
-            self.key_size = idc.Byte(map_attr_addr + 4*ADDR_SZ) & 0xFF
-            self.val_size = idc.Byte(map_attr_addr + 4*ADDR_SZ + 1) & 0xFF
+            self.key_size = idc.get_wide_byte(map_attr_addr + 4*ADDR_SZ) & 0xFF
+            self.val_size = idc.get_wide_byte(map_attr_addr + 4*ADDR_SZ + 1) & 0xFF
             self.buck_size = read_mem(map_attr_addr + 4*ADDR_SZ + 2, forced_addr_sz=2) & 0xFFFF
             self.flags = read_mem(map_attr_addr + 4*ADDR_SZ + 4, forced_addr_sz=4) & 0xFFFFFFFF
 
         self.name = "map [%s]%s" % (self.key_type.name, self.elem_type.name)
 
-        idc.MakeComm(map_attr_addr, "Key type: %s" % self.key_type.name)
-        idc.MakeComm(map_attr_addr + ADDR_SZ, "Elem type: %s " % self.elem_type.name)
-        idc.MakeComm(map_attr_addr + 2*ADDR_SZ, "Bucket type: %s" % self.buck_type.name)
+        idc.set_cmt(map_attr_addr, "Key type: %s" % self.key_type.name,0)
+        idc.set_cmt(map_attr_addr + ADDR_SZ, "Elem type: %s " % self.elem_type.name,0)
+        idc.set_cmt(map_attr_addr + 2*ADDR_SZ, "Bucket type: %s" % self.buck_type.name,0)
         if self.go_subver < 14:
-            idc.MakeComm(map_attr_addr + 3*ADDR_SZ, "Key size: 0x%x" % self.key_size)
-            idc.MakeComm(map_attr_addr + 3*ADDR_SZ + 1, "Value size: 0x%x" % self.val_size)
-            idc.MakeComm(map_attr_addr + 3*ADDR_SZ + 2, "Bucket size: 0x%x" % self.buck_size)
-            idc.MakeComm(map_attr_addr + 3*ADDR_SZ + 4, "Flags: 0x%x" % self.flags)
+            idc.set_cmt(map_attr_addr + 3*ADDR_SZ, "Key size: 0x%x" % self.key_size,0)
+            idc.set_cmt(map_attr_addr + 3*ADDR_SZ + 1, "Value size: 0x%x" % self.val_size,0)
+            idc.set_cmt(map_attr_addr + 3*ADDR_SZ + 2, "Bucket size: 0x%x" % self.buck_size,0)
+            idc.set_cmt(map_attr_addr + 3*ADDR_SZ + 4, "Flags: 0x%x" % self.flags,0)
         else:
-            idc.MakeComm(map_attr_addr + 3*ADDR_SZ, "hash function for hashing keys (ptr to key, seed) -> hash")
-            idc.MakeComm(map_attr_addr + 4*ADDR_SZ, "Key size: 0x%x" % self.key_size)
-            idc.MakeComm(map_attr_addr + 4*ADDR_SZ + 1, "Value size: 0x%x" % self.val_size)
-            idc.MakeComm(map_attr_addr + 4*ADDR_SZ + 2, "Bucket size: 0x%x" % self.buck_size)
-            idc.MakeComm(map_attr_addr + 4*ADDR_SZ + 4, "Flags: 0x%x" % self.flags)
-        idaapi.autoWait()
+            idc.set_cmt(map_attr_addr + 3*ADDR_SZ, "hash function for hashing keys (ptr to key, seed) -> hash",0)
+            idc.set_cmt(map_attr_addr + 4*ADDR_SZ, "Key size: 0x%x" % self.key_size,0)
+            idc.set_cmt(map_attr_addr + 4*ADDR_SZ + 1, "Value size: 0x%x" % self.val_size,0)
+            idc.set_cmt(map_attr_addr + 4*ADDR_SZ + 2, "Bucket size: 0x%x" % self.buck_size,0)
+            idc.set_cmt(map_attr_addr + 4*ADDR_SZ + 4, "Flags: 0x%x" % self.flags,0)
+        idaapi.auto_wait()
 
         _debug("Map Key type: %s" % self.key_type.name)
         _debug("Map Elem type: %s " % self.elem_type.name)
+        _debug("Map Type @ 0x%x parse finished." % self.addr)
 
     def __str__(self):
         return self.name
@@ -1045,27 +1056,28 @@ class UncommonType():
 
         # parse methods
         methods_start_addr = (self.uncomm_type_addr + self.meth_off) & 0xFFFFFFFF
-        for i in xrange(self.meth_cnt):
+        for i in range(self.meth_cnt):
             #meth_addr = self.uncomm_type_addr + i * self.size
             meth = MethodType(methods_start_addr, self.type_parser)
             meth.parse()
             self.methods.append(meth)
             methods_start_addr += meth.size
 
-        idc.MakeComm(self.uncomm_type_addr, "pkg path%s" % \
-            (("(@ 0x%x): %s" % (self.pkgpath_addr, self.pkg_path)) if (pkgpath_off>0 and len(self.pkg_path)>0) else ""))
+        idc.set_cmt(self.uncomm_type_addr, "pkg path%s" % \
+            (("(@ 0x%x): %s" % (self.pkgpath_addr, self.pkg_path)) if (pkgpath_off>0 and len(self.pkg_path)>0) else ""),0)
         _debug("Ucommon type pkg path%s" % \
             (("(@ 0x%x): %s" % (self.pkgpath_addr, self.pkg_path)) if (pkgpath_off>0 and len(self.pkg_path)>0) else ""))
-        idc.MakeComm(self.uncomm_type_addr + 4, "methods number: %d" % self.meth_cnt)
+        idc.set_cmt(self.uncomm_type_addr + 4, "methods number: %d" % self.meth_cnt,0)
         _debug("Uncommon type methods number: %d" % self.meth_cnt)
-        idc.MakeComm(self.uncomm_type_addr + 6, "exported methods number: %d" % self.xmeth_cnt)
+        idc.set_cmt(self.uncomm_type_addr + 6, "exported methods number: %d" % self.xmeth_cnt,0)
         if self.meth_cnt > 0:
-            idc.MakeComm(self.uncomm_type_addr + 8, "methods addr: 0x%x" % ((self.uncomm_type_addr + self.meth_off) & 0xFFFFFFFF))
+            idc.set_cmt(self.uncomm_type_addr + 8, "methods addr: 0x%x" % ((self.uncomm_type_addr + self.meth_off) & 0xFFFFFFFF),0)
             _debug("Ucommon type methods addr: 0x%x" % ((self.uncomm_type_addr + self.meth_off) & 0xFFFFFFFF))
         else:
-            idc.MakeComm(self.uncomm_type_addr + 8, "methods offset")
-        idc.MakeComm(self.uncomm_type_addr + 12, "unused field: 0x%x" % self.unused)
-        idaapi.autoWait()
+            idc.set_cmt(self.uncomm_type_addr + 8, "methods offset",0)
+        idc.set_cmt(self.uncomm_type_addr + 12, "unused field: 0x%x" % self.unused,0)
+        idaapi.auto_wait()
+        _debug("finished to parse Uncommon type @ 0x%x , Uncommon field start addr @ 0x%x" % (self.addr, self.uncomm_type_addr))
 
     def __str__(self):
         ret_str = "%s" % self.prim_type
@@ -1106,6 +1118,7 @@ class MethodType():
         self.size = 4*4
 
     def parse(self):
+        _debug("MethodType @ 0x%x" % self.addr)
         name_off = read_mem(self.addr, forced_addr_sz=4) & 0xFFFFFFFF
         if name_off > 0:
             self.name_addr = self.types_addr + name_off
@@ -1126,13 +1139,13 @@ class MethodType():
         self.ifn_off = read_mem(self.addr + 8, forced_addr_sz=4) & 0xFFFFFFFF
         self.tfn_off = read_mem(self.addr + 12, forced_addr_sz=4) & 0xFFFFFFFF
 
-        idc.MakeComm(self.addr, "Method Name%s" % \
-            (("(@ 0x%x): %s" % (self.name_addr, self.name)) if (name_off>0 and len(self.name)>0) else ""))
+        idc.set_cmt(self.addr, "Method Name%s" % \
+            (("(@ 0x%x): %s" % (self.name_addr, self.name)) if (name_off>0 and len(self.name)>0) else ""),0)
         _debug("Ucommon type Method Name%s" % \
             (("(@ 0x%x): %s" % (self.name_addr, self.name)) if (name_off>0 and len(self.name)>0) else ""))
 
-        idc.MakeComm(self.addr + 4, "Method Type%s" % \
-            (("(@ 0x%x): %s" % (self.mtype_addr, self.mtype.name_obj.name_str)) if (type_off>0 and self.mtype is not None) else ""))
+        idc.set_cmt(self.addr + 4, "Method Type%s" % \
+            (("(@ 0x%x): %s" % (self.mtype_addr, self.mtype.name_obj.name_str)) if (type_off>0 and self.mtype is not None) else ""),0)
         _debug("Uncommon type Method Type%s" % \
             (("(@ 0x%x): %s" % (self.mtype_addr, self.mtype.name_obj.name_str)) if (type_off>0 and self.mtype is not None) else ""))
 
@@ -1143,8 +1156,8 @@ class MethodType():
                 ifn_name = self.mtype.name
             else:
                 ifn_name == "_func_"
-        idc.MakeComm(self.addr + 8, "ifn%s" % \
-            (("(@ 0x%x): %s" % (self.ifn_addr, ifn_name)) if self.ifn_off>0 else ""))
+        idc.set_cmt(self.addr + 8, "ifn%s" % \
+            (("(@ 0x%x): %s" % (self.ifn_addr, ifn_name)) if self.ifn_off>0 else ""),0)
 
         self.tfn_addr = (self.text_addr + self.tfn_off) & 0xFFFFFFFF
         tfn_name = idc.get_func_name(self.tfn_addr)
@@ -1153,10 +1166,11 @@ class MethodType():
                 tfn_name = self.mtype.name
             else:
                 tfn_name = "_func_"
-        idc.MakeComm(self.addr + 12, "tfn%s" % \
-            (("(@ 0x%x): %s" % (self.tfn_addr, tfn_name)) if self.tfn_off>0 else ""))
+        idc.set_cmt(self.addr + 12, "tfn%s" % \
+            (("(@ 0x%x): %s" % (self.tfn_addr, tfn_name)) if self.tfn_off>0 else ""),0)
 
-        idaapi.autoWait()
+        idaapi.auto_wait()
+        _debug("MethodType @ 0x%x finished." % self.addr)
 
 class RawType():
     '''
