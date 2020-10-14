@@ -10,7 +10,7 @@
 This version is developed and tested on macos , ida7.4+ and python3.8.5,
 If there are problems on other platforms and version, you are welcomed to submit issue or pull requst.
 
-**另外需要注意，macos上ida7.4是使用系统默认安装的python3，这样可能导致自己安装的第三方库无法加载，需要切换到brew安装的python，具体的切换方法请参考[这个脚本](https://raw.githubusercontent.com/idapython/src/master/tools/patch-idapython-homebrew.sh)**
+**In addition, it should be noted that ida7.4 on MacOS uses Python 3 installed by default, which may cause the third-party library installed by yourself to fail to load. You need to switch to Python installed by brew. Please refer to [this script](https://raw.githubusercontent.com/idapython/src/master/tools/patch-idapython-homebrew.sh) for specific switching methods.**
 
 ----------------------------------------------------------------------
 
