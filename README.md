@@ -1,6 +1,6 @@
 ## Yet Another Golang binary parser for IDAPro
 
-**[中文](./README_cn.md) | English**
+**English | [中文](./README_cn.md)**
 
 
 ---------------------------------------------------------------------
