@@ -4,6 +4,11 @@
 
 ----------------------------------------------------------------------
 
+> :bulb: **注意**:
+>
+> **master** 分支由 Python2 版的 IDAPython 编写，仅在 IDAPro 7.2/7.0 版本测试过。如果您在用 Python3.x 版的 IDAPython 和更高版本的 IDAPro ，请使用 go_parser 的 **[Python3 分支](https://github.com/0xjiayu/go_parser/tree/py3)**。
+
+
 受 [golang_loader_assist](https://github.com/strazzere/golang_loader_assist) 和 [jeb-golang-analyzer](https://github.com/pnfsoftware/jeb-golang-analyzer) 启发，为 IDAPro 写了一个更完备的 Go 二进制文件解析工具。
 
 ### 核心功能：
@@ -45,7 +50,7 @@ DDGMiner v5029 (MD5: 95199e8f1ab987cd8179a60834644663) 样本中核心的配置�
 
 ### Note
 
-1. 此工具只在 IDA7.2/IDA7.0 上测试过，其他的 IDA 版本未经测试；
+1. 此分支由 Python2 版的 IDAPython API 编写，只在 IDAPro v7.2/v7.0 上测试过，其他的 IDA 版本未经测试；
 2. strings 解析模块从 [golang_loader_assist](https://github.com/strazzere/golang_loader_assist) 移植过来，我自己又增加了 string pointers 解析的功能，目前只支持 x86 架构。
 
 ### Refer
