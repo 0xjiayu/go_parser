@@ -3,20 +3,6 @@
 import idc, idaapi, idautils
 idaapi.require("common")
 
-
-def get_gopclntbl_seg_start_addr():
-    seg_start_addr = idc.BADADDR
-    # .gopclntab found in (older) PE & ELF binaries, __gopclntab found in macho binaries,
-    # runtime.pclntab in .rdata for newer PE binaries
-    seg = common.get_seg(['.gopclntab', '__gopclntab'])
-
-    if seg is None:
-        seg_start_addr = common.get_seg_start_addr_from_rdata(['runtime.pclntab'])
-    else:
-        seg_start_addr = seg.start_ea
-
-    return seg_start_addr
-
 class Pclntbl():
     '''
     PcLineTable:
@@ -256,13 +242,15 @@ class FuncStruct():
                     common._error("Make func_name_str [%s] failed @0x%x" % (self.name, name_addr))
 
             # Rename function
-            real_func_addr = idaapi.get_func(func_addr)
-            if len(self.name) > 0 and real_func_addr is not None:
-                if idc.MakeNameEx(real_func_addr.startEA, self.name, flags=idaapi.SN_FORCE):
-                    idaapi.autoWait()
-                    common._debug("Rename function 0x%x: %s" % (real_func_addr.startEA, self.name))
-                else:
-                    common._error('Failed to rename function @ 0x%x' % real_func_addr.startEA)
+            real_func = idaapi.get_func(func_addr)
+            if real_func is not None:
+                orig_func_name = idc.get_func_name(real_func.startEA)
+                if len(self.name) > 0 and orig_func_name.startswith("sub_"):
+                    if idc.MakeNameEx(real_func.startEA, self.name, flags=idaapi.SN_FORCE):
+                        idaapi.autoWait()
+                        common._debug("Rename function 0x%x: %s" % (real_func.startEA, self.name))
+                    else:
+                        common._error('Failed to rename function @ 0x%x' % real_func.startEA)
 
         self.args = common.read_mem(self.addr + self.pclntbl.ptr_sz + 4, forced_addr_sz=4, read_only=is_test)
         self.frame = common.read_mem(self.addr + self.pclntbl.ptr_sz + 2*4, forced_addr_sz=4, read_only=is_test)
@@ -313,4 +301,4 @@ def parse_func_pointer():
 
                 data_ref = idaapi.get_next_dref_to(addr, data_ref)
 
-    common._info("Rename %d function pointers.\n" % renamed)
+    common._info("\nRename %d function pointers.\n" % renamed)
