@@ -3,7 +3,7 @@
 import idc, idaapi, idautils
 import string
 
-DEBUG = False
+DEBUG = True
 ADDR_SZ = 4 # Default: 32-bit
 GOVER = ""
 
@@ -30,11 +30,11 @@ def get_seg(seg_names):
 
     return seg
 
-def get_seg_start_addr_from_rdata(seg_names):
-    for seg_name in seg_names:
+def get_seg_by_symname(sym_names):
+    for sym_name in sym_names:
         for ea, name in idautils.Names():
-            if name == seg_name:
-                return ea
+            if name == sym_name:
+                return idaapi.getseg(ea)
 
     return None
 

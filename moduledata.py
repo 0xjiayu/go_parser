@@ -14,24 +14,22 @@ def is_stripped():
         return True # is stripped
     return False # not stripped
 
-def get_mdata_seg_addr():
-    seg_start_addr = 0
+def get_mdata_seg():
+    seg = None
 
     ftype = idc.get_inf_attr(idc.INF_FILETYPE)
     if ftype == idc.FT_PE or ftype == idc.FT_EXE or ftype == idc.FT_EXE_OLD:
         seg = common.get_seg([".data"])
     else:
-        seg = common.get_seg([".noptrdata", "__noptrdata"])
+        seg = common.get_seg(["LOAD", ".noptrdata", "__noptrdata"])
 
     if seg is None:
-        # runtime.pclntab in .rdata for newer PE binaries
-        seg_start_addr = common.get_seg_start_addr_from_rdata(['runtime.noptrdata'])
-    else:
-        seg_start_addr = seg.start_ea
+        # runtime.pclntab in .rdata for newer PE binary
+        seg = common.get_seg_by_symname(['runtime.noptrdata'])
 
-    if seg_start_addr is None:
-        seg_start_addr = 0
-    return seg_start_addr
+    if seg is None:
+        raise Exception("Invalid address of segment [.noptrdata]")
+    return seg
 
 
 def test_firstmoduledata(possible_addr):
@@ -60,20 +58,18 @@ def find_first_moduledata_addr():
         common._debug("Binary file is stripped")
         magic_num = pclntbl.Pclntbl.MAGIC
         # firstmoduledata is contained in segment [.noptrdata]
-        mdata_seg_addr = get_mdata_seg_addr()
-        if mdata_seg_addr == None:
-            raise Exception("Invalid address of segment [.noptrdata]")
-        if mdata_seg_addr == 0:
+        mdata_seg = get_mdata_seg()
+        if mdata_seg.start_ea == 0:
             common._error("Failed to find valid segment [.noptrdata]")
 
-        curr_addr = mdata_seg_addr
-        while curr_addr <= idc.BADADDR:
+        curr_addr = mdata_seg.start_ea
+        while curr_addr <= mdata_seg.end_ea:
             if idc.Dword(read_mem(curr_addr, read_only=True)) & 0xFFFFFFFF == magic_num: # possible firstmoduledata
                 if test_firstmoduledata(curr_addr):
                     break
             curr_addr += ADDR_SZ
         
-        if curr_addr >= idc.BADADDR:
+        if curr_addr >= mdata_seg.end_ea:
             raise Exception("Failed to find firstmoduledata address!")
         first_moduledata_addr = curr_addr
 
