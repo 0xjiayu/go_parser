@@ -13,7 +13,7 @@ if idaapi.get_inf_structure().is_64bit():
 
 def _info(info_str):
     print(info_str)
-    
+
 def _error(err_str):
     print('[ERROR] - %s' % err_str)
 
@@ -125,7 +125,7 @@ def get_goroot():
             # e.g.: mov     rax, cs:runtime_internal_sys_DefaultGoroot
             '''
             Op Types refer: https://www.hex-rays.com/products/ida/support/sdkdoc/ua_8hpp.html#aaf9da6ae7e8b201108fc225adf13b4d9
-                o_void  =      0  # No Operand               
+                o_void  =      0  # No Operand
                 o_reg  =       1  # General Register (al,ax,es,ds...)    reg
                 o_mem  =       2  # Direct Memory Reference  (DATA)      addr
                 o_phrase  =    3  # Memory Ref [Base Reg + Index Reg]    phrase
@@ -184,9 +184,9 @@ def find_ret_cb(flow_chart):
     ret = 0
     for idx in range(flow_chart.size):
         if flow_chart[idx].type == idaapi.fcb_ret:
-            # Refer: https://www.hex-rays.com/products/ida/support/sdkdoc/gdl_8hpp.html#afa6fb2b53981d849d63273abbb1624bd 
+            # Refer: https://www.hex-rays.com/products/ida/support/sdkdoc/gdl_8hpp.html#afa6fb2b53981d849d63273abbb1624bd
             ret_cb_list.append(idx)
-    return ret_cb_list    
+    return ret_cb_list
 
 
 STRIP_CHARS = [ '(', ')', '[', ']', '{', '}', ' ', '"' ]

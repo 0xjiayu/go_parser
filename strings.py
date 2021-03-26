@@ -112,7 +112,7 @@ def parse_str_ptr(addr):
     # - second one must be a memory address
     if idc.get_operand_type(addr, 0) != 1 or idc.get_operand_type(addr, 1) != 2:
         return False
-    
+
     addr_2 = idc.find_code(addr, idaapi.SEARCH_DOWN)
     # same operands' type for addr_2
     if idc.print_insn_mnem(addr_2) != 'mov' or idc.get_operand_type(addr_2, 0) != 1 or idc.get_operand_type(addr_2, 1) != 2:
