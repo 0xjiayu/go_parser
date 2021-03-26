@@ -17,7 +17,7 @@ class TypesParser():
     '''
 
     RAW_TYPES = ['Bool','Int','Int8','Int16','Int32','Int64','Uint','Uint8','Uint16','Uint32','Uint64','Uintptr','Float32','Float64','Complex64','Complex128', 'UnsafePointer', 'String']
-    
+
     def __init__(self, firstmoduledata):
         self.moddata = firstmoduledata
         self.parsed_types = dict()
@@ -215,7 +215,7 @@ class RType():
         idc.set_cmt(self.addr + 2*ADDR_SZ + 5, "align",0)
         idc.set_cmt(self.addr + 2*ADDR_SZ + 6, "field align",0)
         idc.set_cmt(self.addr + 2*ADDR_SZ + 7, "kind: %s" % self.get_kind(),0)
-        idc.set_cmt(self.addr + 2*ADDR_SZ + 8, "alg",0)
+        idc.set_cmt(self.addr + 2*ADDR_SZ + 8, "euqal",0)
         idc.set_cmt(self.addr + 3*ADDR_SZ + 8, "gcdata",0)
         _debug("kind: %s" % self.get_kind())
 
@@ -285,29 +285,29 @@ class Name():
     Refer: https://golang.org/src/reflect/type.go
 
     name is an encoded type name with optional extra data.
-    
+
     The first byte is a bit field containing:
-    
+
         1<<0 the name is exported
         1<<1 tag data follows the name
         1<<2 pkgPath nameOff follows the name and tag
-    
+
     The next two bytes are the data length:
-    
+
          l := uint16(data[1])<<8 | uint16(data[2])
-    
+
     Bytes [3:3+l] are the string data.
-    
+
     If tag data follows then bytes 3+l and 3+l+1 are the tag length,
     with the data following.
-    
+
     If the import path follows, then 4 bytes at the end of
     the data form a nameOff. The import path is only set for concrete
     methods that are defined in a different package than their type.
-    
+
     If a name starts with "*", then the exported bit represents
     whether the pointed to type is exported.
-    
+
     type name struct {
         bytes *byte
     }
@@ -365,7 +365,7 @@ class Name():
                 pkgpath_off_addr += (self.tag_len + 2)
             pkgpath_off = read_mem(pkgpath_off_addr, forced_addr_sz=4)
             _debug("pkgpath_off : {}".format( hex(pkgpath_off)))
-            if pkgpath_off > 0: # if error return 0xffffffff 
+            if pkgpath_off > 0: # if error return 0xffffffff
             # if c_int(pkgpath_off).value > 0:
                 pkgpath_addr = self.moddata.types_addr + pkgpath_off
                 pkgpath_name_obj = Name(pkgpath_addr, self.moddata)
@@ -449,7 +449,7 @@ class PtrType():
 
 class StructType():
     '''
-    Struct type    
+    Struct type
     Refer: https://golang.org/src/reflect/type.go
 
     type structType struct {
@@ -514,7 +514,7 @@ class StructType():
 
 class StructFiled():
     '''
-    Struct filed    
+    Struct filed
     Refer: https://golang.org/src/reflect/type.go
 
     type structField struct {
@@ -568,7 +568,7 @@ class StructFiled():
 
 class ArrayType():
     '''
-    Array type  
+    Array type
     Refer: https://golang.org/src/reflect/type.go
 
     type arrayType struct {
@@ -634,7 +634,7 @@ class SliceType():
 
     def parse(self):
         _debug("Slice Type @ 0x%x" % self.addr)
-        
+
         self.elem_type_addr = read_mem(self.addr + self.rtype.self_size)
         if self.type_parser.has_been_parsed(self.elem_type_addr):
             self.elem_rtype = self.type_parser.parsed_types[self.elem_type_addr]
@@ -654,7 +654,7 @@ class SliceType():
 
 class InterfaceType():
     '''
-    Interface type   
+    Interface type
     Refer: https://golang.org/src/reflect/type.go
 
     type interfaceType struct {
@@ -714,11 +714,11 @@ class InterfaceType():
             return ret_str
         else:
             return ""
-        
+
 
 class IMethodType():
     '''
-    IMethod type    
+    IMethod type
     Refer: https://golang.org/src/reflect/type.go
 
     type imethod struct {
@@ -770,7 +770,7 @@ class IMethodType():
 
 class ChanType():
     '''
-    Channel type    
+    Channel type
     Refer: https://golang.org/src/reflect/type.go
 
     type chanType struct {
@@ -1039,7 +1039,7 @@ class UncommonType():
         self.pkg_path = ""
         self.name = prim_type.name
         self.size = UncommonType.SIZE
-        
+
     def parse(self):
         _debug("Start to parse Uncommon type @ 0x%x , Uncommon field start addr @ 0x%x" % (self.addr, self.uncomm_type_addr))
         pkgpath_off = read_mem(self.uncomm_type_addr, forced_addr_sz=4) & 0xFFFFFFFF
@@ -1129,7 +1129,7 @@ class MethodType():
         # note: some methods are actually not present in the binary
         # for those, typeOff, ifn, tfn are 0
         type_off = read_mem(self.addr + 4, forced_addr_sz=4) & 0xFFFFFFFF
-        if type_off > 0:
+        if type_off > 0 and type_off != 0xFFFFFFFF:
             self.mtype_addr = self.types_addr + type_off
             if self.type_parser.has_been_parsed(self.mtype_addr):
                 self.mtype = self.type_parser.parsed_types[self.mtype_addr].rtype
