@@ -24,25 +24,25 @@ class Pclntbl():
     Refer:
         1. golang.org/s/go12symtab
         2. https://golang.org/src/debug/gosym/pclntab.go
+        3. https://golang.org/src/runtime/symtab.go
 
-    For an amd64 system, the pclntab symbol begins:
-
-        [4] 0xfffffffb
-        [2] 0x00 0x00
-        [1] 0x01
-        [1] 0x08
-        [8] N (size of function symbol table)
-        [8] pc0
-        [8] func0 offset
-        [8] pc1
-        [8] func1 offset
-        …
-        [8] pcN
-        [4] int32 offset from start to source file table
-        … and then data referred to by offset, in an unspecified order …
+    // pcHeader holds data used by the pclntab lookups.
+    type pcHeader struct {
+        magic          uint32  // 0xFFFFFFFA
+        pad1, pad2     uint8   // 0,0
+        minLC          uint8   // min instruction size
+        ptrSize        uint8   // size of a ptr in bytes
+        nfunc          int     // number of functions in the module
+        nfiles         uint    // number of entries in the file tab.
+        funcnameOffset uintptr // offset to the funcnametab variable from pcHeader
+        cuOffset       uintptr // offset to the cutab variable from pcHeader
+        filetabOffset  uintptr // offset to the filetab variable from pcHeader
+        pctabOffset    uintptr // offset to the pctab varible from pcHeader
+        pclnOffset     uintptr // offset to the pclntab variable from pcHeader
+    }
     '''
     # Magic number of pclinetable header
-    MAGIC = 0xFFFFFFFB
+    MAGIC = 0xFFFFFFFA
 
     def __init__(self, start_addr):
         self.start_addr = start_addr
@@ -97,10 +97,8 @@ class Pclntbl():
         common._info("Total functions number: %d\n" % self.func_num)
 
         self.func_tbl_sz = self.func_num * 2 * self.ptr_sz
-        funcs_entry = self.start_addr + 8
-        self.func_tbl_addr = funcs_entry + self.ptr_sz
-        idc.set_cmt(funcs_entry, "Functions number",0)
-        idc.set_name(funcs_entry, "funcs_entry", flags=idaapi.SN_FORCE)
+        self.funcnametab_addr = self.start_addr + common.read_mem(self.start_addr + 8 + 2 * self.ptr_sz, forced_addr_sz=self.ptr_sz)
+        self.func_tbl_addr = self.start_addr + common.read_mem(self.start_addr + 8 + 6 * self.ptr_sz, forced_addr_sz=self.ptr_sz)
         idaapi.auto_wait()
         idc.set_name(self.func_tbl_addr, "pc0", flags=idaapi.SN_FORCE)
         idaapi.auto_wait()
@@ -119,9 +117,7 @@ class Pclntbl():
                     idaapi.auto_wait()
                     common._info("Create function @ 0x%x" % func_addr)
 
-            name_off = common.read_mem(curr_addr + self.ptr_sz, forced_addr_sz=self.ptr_sz)
-            name_addr = self.start_addr + self.ptr_sz + name_off
-            func_st_addr = name_addr - self.ptr_sz
+            func_st_addr = self.func_tbl_addr + common.read_mem(curr_addr + self.ptr_sz, forced_addr_sz=self.ptr_sz)
             func_st = FuncStruct(func_st_addr, self)
             func_st.parse()
 
@@ -133,23 +129,23 @@ class Pclntbl():
         '''
         Parse and extract source all file names
         '''
-        srcfile_tbl_off = common.read_mem(self.func_tbl_addr + self.func_tbl_sz + self.ptr_sz, forced_addr_sz=4) & 0xFFFFFFFF
+        srcfile_tbl_off = common.read_mem(self.start_addr + 8 + 4 * self.ptr_sz, forced_addr_sz=4) & 0xFFFFFFFF
         self.srcfile_tbl_addr = self.start_addr + srcfile_tbl_off
-        idc.set_cmt(self.func_tbl_addr + self.func_tbl_sz + self.ptr_sz, \
+        idc.set_cmt(self.start_addr + 8 + 4 * self.ptr_sz, \
             "Source file table addr: 0x%x" % self.srcfile_tbl_addr,0)
         idc.set_name(self.srcfile_tbl_addr, "runtime_filetab", flags=idaapi.SN_FORCE)
         idaapi.auto_wait()
 
-        self.srcfile_num = (common.read_mem(self.srcfile_tbl_addr, forced_addr_sz=4) & 0xFFFFFFFF) - 1
+        self.srcfile_num = (common.read_mem(self.start_addr + 8 + self.ptr_sz, forced_addr_sz=4) & 0xFFFFFFFF)
         common._info("--------------------------------------------------------------------------------------")
         common._info("Source File paths(Total number: %d, default print results are user-defind files):\n" % self.srcfile_num)
+        src_cur_addr = self.srcfile_tbl_addr
         for idx in range(self.srcfile_num):
-            srcfile_off = common.read_mem((idx+1) * 4 + self.srcfile_tbl_addr, forced_addr_sz=4) & 0xFFFFFFFF
-            srcfile_addr = self.start_addr + srcfile_off
-            srcfile_path = idc.get_strlit_contents(srcfile_addr).decode()
+            srcfile_addr = src_cur_addr
+            srcfile_path = idc.get_strlit_contents(src_cur_addr).decode()
             if srcfile_path is None or len(srcfile_path) == 0:
-                common._error("Failed to parse the [%d] src file(off: 0x%x, addr: @ 0x%x)" %\
-                    (idx+1, srcfile_off, srcfile_addr))
+                common._error("Failed to parse the [%d] src file(addr: @ 0x%x)" %\
+                    (idx+1, srcfile_addr))
                 continue
 
             if len(self.goroot) > 0 and (srcfile_path.startswith(self.goroot) or "/pkg/" in srcfile_path or\
@@ -163,8 +159,7 @@ class Pclntbl():
 
             idc.create_strlit(srcfile_addr, srcfile_addr + len(srcfile_path) + 1)
             idaapi.auto_wait()
-            idc.set_cmt((idx+1) * 4 + self.srcfile_tbl_addr, "",0)
-            idaapi.add_dref((idx+1) * 4 + self.srcfile_tbl_addr, srcfile_addr, idaapi.dr_O)
+            src_cur_addr += len(srcfile_path) + 1
             idaapi.auto_wait()
         common._info("--------------------------------------------------------------------------------------")
 
@@ -235,7 +230,7 @@ class FuncStruct():
         func_addr = common.read_mem(self.addr, forced_addr_sz=self.pclntbl.ptr_sz, read_only=is_test)
 
         name_addr = common.read_mem(self.addr + self.pclntbl.ptr_sz, forced_addr_sz=4, read_only=is_test) \
-            + self.pclntbl.start_addr
+            + self.pclntbl.funcnametab_addr
         raw_name_str = idc.get_strlit_contents(name_addr)
         if raw_name_str and len(raw_name_str) > 0:
             self.name = common.clean_function_name(raw_name_str)

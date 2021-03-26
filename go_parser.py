@@ -32,7 +32,7 @@ def main():
     firstmoddata = moduledata.ModuleData(firstmoddata_addr)
     firstmoddata.parse()
     # parse pclntab(functions/srcfiles and function pointers)
-    pclntab = pclntbl.Pclntbl(firstmoddata.pclntbl_addr)
+    pclntab = pclntbl.Pclntbl(firstmoddata.pcheader_addr)
     pclntab.parse()
 
     common.get_goversion()
@@ -41,11 +41,11 @@ def main():
     # parse strings
     parse_str_cnt = strings.parse_strings()
     common._info("Parsed %d strings\n" % parse_str_cnt)
-    
+
     # parse data types
     type_parser = types_builder.TypesParser(firstmoddata)
     type_parser.build_all_types()
-    
+
     # parse itabs
     itab.parse_itab(firstmoddata, type_parser)
 
