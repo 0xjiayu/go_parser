@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-import idc, idaapi
+import idc, idaapi, ida_segment
 idaapi.require("pclntbl")
 idaapi.require("common")
 from common import ADDR_SZ, read_mem
@@ -21,7 +21,7 @@ def get_mdata_seg():
     if ftype == idc.FT_PE or ftype == idc.FT_EXE or ftype == idc.FT_EXE_OLD:
         seg = common.get_seg([".data"])
     else:
-        seg = common.get_seg(["LOAD", ".noptrdata", "__noptrdata"])
+        seg = common.get_seg([".noptrdata", "__noptrdata"])
 
     if seg is None:
         # runtime.pclntab in .rdata for newer PE binary
@@ -44,6 +44,27 @@ def test_firstmoduledata(possible_addr):
         return True
     return False
 
+def find_first_moduledata_addr_by_brute():
+    magic_num = pclntbl.Pclntbl.MAGIC
+    first_moduledata_addr = idc.BADADDR
+
+    segn = ida_segment.get_segm_qty()
+    for idx in range(segn):
+        curr_seg = ida_segment.getnseg(idx)
+        curr_addr = curr_seg.start_ea
+        while curr_addr <= curr_seg.end_ea:
+            if idc.Dword(read_mem(curr_addr, read_only=True)) & 0xFFFFFFFF == magic_num: # possible firstmoduledata
+                if test_firstmoduledata(curr_addr):
+                    break
+            curr_addr += ADDR_SZ
+
+        if curr_addr >= curr_seg.end_ea:
+            continue
+
+        first_moduledata_addr = curr_addr
+        break
+
+    return first_moduledata_addr
 
 def find_first_moduledata_addr():
     first_moduledata_addr = idc.BADADDR
@@ -69,9 +90,13 @@ def find_first_moduledata_addr():
                     break
             curr_addr += ADDR_SZ
         
-        if curr_addr >= mdata_seg.end_ea:
+        if curr_addr < mdata_seg.end_ea:
+            first_moduledata_addr = curr_addr
+        else:
+            first_moduledata_addr = find_first_moduledata_addr_by_brute()
+
+        if first_moduledata_addr == idc.BADADDR:
             raise Exception("Failed to find firstmoduledata address!")
-        first_moduledata_addr = curr_addr
 
     return first_moduledata_addr
 
