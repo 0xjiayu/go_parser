@@ -89,7 +89,7 @@ def find_first_moduledata_addr():
                 if test_firstmoduledata(curr_addr):
                     break
             curr_addr += ADDR_SZ
-        
+
         if curr_addr < mdata_seg.end_ea:
             first_moduledata_addr = curr_addr
         else:
