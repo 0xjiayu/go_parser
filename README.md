@@ -5,9 +5,13 @@
 
 ---------------------------------------------------------------------
 
+> **NOTE**:
+>
+> Now the latest master branch is the Python3 edition. The old master branch has been changed to branch **py2**.
+
 ### Instructions for Python3 branch
 
-This version is developed and tested on macos , ida7.4+ and python3.8.5,
+This version is developed and tested on macOS/Windows, ida7.4+ and python3.8.5,
 If there are problems on other platforms and version, you are welcomed to submit issue or pull requst.
 
 **In addition, it should be noted that ida7.4 on MacOS uses Python 3 installed by default, which may cause the third-party library installed by yourself to fail to load. You need to switch to Python installed by brew. Please refer to [this script](https://raw.githubusercontent.com/idapython/src/master/tools/patch-idapython-homebrew.sh) for specific switching methods.**

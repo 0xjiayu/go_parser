@@ -4,9 +4,13 @@
 
 ---------------------------------------------------------------------
 
-### python3版本使用说明
+> **注意**：
+>
+> 最新的 master 分支为 Python3 版，以前的 master 分支已重命名为 py2 分支。
 
-此版本是在macos上 ida7.4+, python3.8.5 版本测试通过，如果在其他平台上测试存在问题，欢迎提issue或者pr。
+### Python3 版本使用说明
+
+此版本是在macOS/Windows 上 ida7.4+, python3.8.5 版本测试通过，如果在其他平台上测试存在问题，欢迎提issue或者pr。
 
 **另外需要注意，macos上ida7.4是使用系统默认安装的python3，这样可能导致自己安装的第三方库无法加载，需要切换到brew安装的python，具体的切换方法请参考[这个脚本](https://raw.githubusercontent.com/idapython/src/master/tools/patch-idapython-homebrew.sh)**
 
