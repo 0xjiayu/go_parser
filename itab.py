@@ -64,25 +64,25 @@ def parse_itab(moddata, type_parser):
     common._info("Start to parse Itab")
     itab_addr = idc.BADADDR
     itab_end_addr = idc.BADADDR
-    itab_num = 0
+    itab_cnt = 0
     # comfirm Itab's start_addr and end_addr
     if moddata == None:
         itab_seg = common.get_seg([".itablink", "__itablink"])
         if itab_seg:
             itab_addr = itab_seg.start_ea
             itab_end_addr = itab_seg.end_ea
-            itab_num = (itab_end_addr - itab_addr) / common.ADDR_SZ
+            itab_cnt = (itab_end_addr - itab_addr) / common.ADDR_SZ
     else:
         itab_addr = moddata.itablink_addr
-        itab_num = moddata.itab_num
-        itab_end_addr = itab_addr + itab_num * common.ADDR_SZ
+        itab_cnt = moddata.itab_cnt
+        itab_end_addr = itab_addr + itab_cnt * common.ADDR_SZ
 
     curr_addr = itab_addr
     while curr_addr < itab_end_addr:
         curr_itabelem_addr = common.read_mem(curr_addr)
         itab_elem = ItabElem(curr_itabelem_addr, type_parser)
         itab_elem.parse()
-        itab_num += 1
+        itab_cnt += 1
         curr_addr += common.ADDR_SZ
 
-    common._info("Itab parsing done, total number: %d" % itab_num)    
+    common._info("Itab parsing done, total number: %d" % itab_cnt)

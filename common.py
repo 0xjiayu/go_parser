@@ -7,13 +7,19 @@ import ida_idaapi
 DEBUG = False
 ADDR_SZ = 4 # Default: 32-bit
 GOVER = ""
+MAX_EA = ida_idaapi.get_inf_structure().max_ea
+
+# Magic number of pclinetable header
+MAGIC_112 = 0xFFFFFFFB  # Magic Number from version 1.12
+MAGIC_116 = 0xFFFFFFFA  # Magic Number from version 1.16
+MAGIC_118 = 0xFFFFFFF0  # Magic Number from version 1.18
 
 if idaapi.get_inf_structure().is_64bit():
     ADDR_SZ = 8
 
 def _info(info_str):
     print(info_str)
-    
+
 def _error(err_str):
     print('[ERROR] - %s' % err_str)
 
@@ -53,7 +59,7 @@ def find_func_by_name(func_name):
 def read_mem(addr, forced_addr_sz=None, read_only=False):
     global ADDR_SZ
 
-    if not read_only:
+    if not read_only: # Set bytes to undefined firstly
         if forced_addr_sz:
             idc.del_items(addr, forced_addr_sz, idc.DELIT_SIMPLE)
         else:
@@ -64,27 +70,27 @@ def read_mem(addr, forced_addr_sz=None, read_only=False):
         if not read_only:
             idc.create_data(addr, idc.FF_WORD, 2, ida_idaapi.BADADDR)
             idaapi.auto_wait()
-        value = idc.get_wide_word(addr)
+        value = idc.get_wide_word(addr) & 0xFFFF
         return 0 if value == idc.BADADDR else value
     if forced_addr_sz == 4 or ADDR_SZ == 4:
         if not read_only:
             idc.create_data(addr,idc.FF_DWORD, 4, ida_idaapi.BADADDR)
             idaapi.auto_wait()
-        value = idc.get_wide_dword(addr)
+        value = idc.get_wide_dword(addr) & 0xFFFFFFFF
         return 0 if value == idc.BADADDR else value
 
     if forced_addr_sz == 8 or ADDR_SZ == 8:
         if not read_only:
             idc.create_data(addr, idc.FF_QWORD, 8, ida_idaapi.BADADDR)
             idaapi.auto_wait()
-        value = idc.get_qword(addr)
+        value = idc.get_qword(addr) & 0xFFFFFFFFFFFFFFFF
         return 0 if value == idc.BADADDR else value
 
 def get_goroot():
-    goroot_path_str = ""
     '''
     Get GOROOT path string
     '''
+    goroot_path_str = ""
     func_goroot = find_func_by_name("runtime_GOROOT")
     if func_goroot is None:
         _error("Failed to find func contains goroot")
@@ -125,7 +131,7 @@ def get_goroot():
             # e.g.: mov     rax, cs:runtime_internal_sys_DefaultGoroot
             '''
             Op Types refer: https://www.hex-rays.com/products/ida/support/sdkdoc/ua_8hpp.html#aaf9da6ae7e8b201108fc225adf13b4d9
-                o_void  =      0  # No Operand               
+                o_void  =      0  # No Operand
                 o_reg  =       1  # General Register (al,ax,es,ds...)    reg
                 o_mem  =       2  # Direct Memory Reference  (DATA)      addr
                 o_phrase  =    3  # Memory Ref [Base Reg + Index Reg]    phrase
@@ -184,9 +190,9 @@ def find_ret_cb(flow_chart):
     ret = 0
     for idx in range(flow_chart.size):
         if flow_chart[idx].type == idaapi.fcb_ret:
-            # Refer: https://www.hex-rays.com/products/ida/support/sdkdoc/gdl_8hpp.html#afa6fb2b53981d849d63273abbb1624bd 
+            # Refer: https://www.hex-rays.com/products/ida/support/sdkdoc/gdl_8hpp.html#afa6fb2b53981d849d63273abbb1624bd
             ret_cb_list.append(idx)
-    return ret_cb_list    
+    return ret_cb_list
 
 
 STRIP_CHARS = [ '(', ')', '[', ']', '{', '}', ' ', '"' ]
@@ -195,7 +201,7 @@ def clean_function_name(name_str):
     '''
     Clean generic 'bad' characters
     '''
-    name_str = name_str.decode('utf-8',errors="ignore")
+    name_str = name_str.decode('utf-8', errors="ignore")
     name_str = "".join(filter(lambda x: x in string.printable, name_str))
 
     for c in STRIP_CHARS:
