@@ -170,7 +170,7 @@ def get_goroot():
             if goroot_path_len == 0 or goroot_path_addr == 0:
                 raise Exception("Invalid GOROOT Address ang Length")
 
-            goroot_path_str = idc.get_bytes(goroot_path_addr, goroot_path_len).decode()
+            goroot_path_str = idc.get_bytes(goroot_path_addr, goroot_path_len).decode("utf-8", errors="ignore")
             if goroot_path_str is None or len(goroot_path_str)==0:
                 raise Exception("Invalid GOROOT")
             idc.create_strlit(goroot_path_addr, goroot_path_addr+goroot_path_len)
