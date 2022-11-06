@@ -6,13 +6,13 @@
 
 > **注意**：
 >
-> 最新的 master 分支为 Python3 版，以前的 master 分支已重命名为 py2 分支。
+> 最新的 master 分支为 Python3 版，以前的 master 分支已重命名为 py2 分支，并且暂停维护。
 
 ### Python3 版本使用说明
 
-此版本是在macOS/Windows 上 ida7.4+, python3.8.5 版本测试通过，如果在其他平台上测试存在问题，欢迎提issue或者pr。
+此版本是在 macOS/Windows 上 IDA7.4+, python3.8.x 版本测试通过，如果在其他平台上测试存在问题，欢迎提issue 或者 PR。
 
-**另外需要注意，macos上ida7.4是使用系统默认安装的python3，这样可能导致自己安装的第三方库无法加载，需要切换到brew安装的python，具体的切换方法请参考[这个脚本](https://raw.githubusercontent.com/idapython/src/master/tools/patch-idapython-homebrew.sh)**
+**另外需要注意，macOS 上 IDA7.4+ 是使用系统默认安装的 Python3，这样可能导致自己安装的第三方库无法加载，需要切换到 `brew` 安装的 Python，具体的切换方法请参考[这个脚本](https://raw.githubusercontent.com/idapython/src/master/tools/patch-idapython-homebrew.sh)**
 
 ----------------------------------------------------------------------
 
@@ -58,7 +58,7 @@ DDGMiner v5029 (MD5: 95199e8f1ab987cd8179a60834644663) 样本中核心的配置�
 
 ### Note
 
-1. 此版本在 IDA7.4+,python3.8.5 上测试过，其他的 IDA 版本未经测试；
+1. 此版本在 IDA7.4+, Python3.8.x 上测试过，其他的 IDA 版本未经测试；
 2. strings 解析模块从 [golang_loader_assist](https://github.com/strazzere/golang_loader_assist) 移植过来，我自己又增加了 string pointers 解析的功能，目前只支持 x86 架构。
 
 ### Refer

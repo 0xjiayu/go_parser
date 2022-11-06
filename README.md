@@ -7,14 +7,14 @@
 
 > **NOTE**:
 >
-> Now the latest master branch is the Python3 edition. The old master branch has been changed to branch **py2**.
+> Now the latest master branch is the Python3 version. The old master branch has been changed to branch **py2**, and **temporarily not maintained**.
 
 ### Instructions for Python3 branch
 
-This version is developed and tested on macOS/Windows, ida7.4+ and python3.8.5,
-If there are problems on other platforms and version, you are welcomed to submit issue or pull requst.
+This version is developed and tested on macOS/Windows, IDA7.4+ and Python3.8.x,
+If there are problems on other platforms and version, you are welcomed to submit issue or Pull Requsts.
 
-**In addition, it should be noted that ida7.4 on MacOS uses Python 3 installed by default, which may cause the third-party library installed by yourself to fail to load. You need to switch to Python installed by brew. Please refer to [this script](https://raw.githubusercontent.com/idapython/src/master/tools/patch-idapython-homebrew.sh) for specific switching methods.**
+**In addition, it should be noted that IDA7.4 on macOS uses Python3 installed by default, which may cause the third-party library installed by yourself to fail to load. You need to switch to Python installed by `brew`. Please refer to [this script](https://raw.githubusercontent.com/idapython/src/master/tools/patch-idapython-homebrew.sh) for specific switching methods.**
 
 ----------------------------------------------------------------------
 
@@ -59,7 +59,7 @@ Additionally, the **str_ptr.py** will parse string pointers by specify the start
 
 ### Note
 
-1. This tool is written in Python2, and tested only on IDA7.2/IDA7.0;
+1. This tool is written in Python3, and tested on IDA7.4+;
 2. The strings parsing module was migrated from [golang_loader_assist](https://github.com/strazzere/golang_loader_assist), and I added the feature of string pointers parsing. It only supports x86(32bit & 64bit) architecture for now.
 
 ### Refer
