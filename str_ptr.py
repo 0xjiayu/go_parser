@@ -13,8 +13,10 @@ __email__ = ["jiayu0x@gmail.com"]
 import idc, idaapi
 idaapi.require("common")
 
-START_EA = 0x98C710
-END_EA = 0x990F58
+START_EA = 0x586B08 # first str pointer address
+END_EA = 0x587C18 # last str pointer address
+
+str_ptr_cnt = 0
 
 curr_addr = START_EA
 while curr_addr <= END_EA:
@@ -24,7 +26,10 @@ while curr_addr <= END_EA:
         if idc.create_strlit(curr_str_addr, curr_str_addr + curr_str_len):
             idaapi.auto_wait()
 
-            curr_str = idc.get_bytes(curr_str_addr, curr_str_len).decode()
-            print("@ 0x%x: %s" % (curr_str_addr, curr_str))
+            curr_str = idc.get_bytes(curr_str_addr, curr_str_len).decode("utf-8", errors="ignore")
+            print(f"@ {curr_str_addr:#x}: {curr_str}")
+            str_ptr_cnt += 1
 
     curr_addr += 2 * common.ADDR_SZ
+
+print(f"\n=> Success to parse {str_ptr_cnt} string pointers")
