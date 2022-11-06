@@ -684,6 +684,7 @@ class FuncStruct():
 
 def parse_func_pointer():
     renamed = 0
+    possible_seg = ("rodata", "LOAD", ".rdata", ".data")
 
     for segea in idautils.Segments():
         for addr in idautils.Functions(segea, idc.get_segm_end(segea)):
@@ -693,7 +694,7 @@ def parse_func_pointer():
             # Look at data xrefs to the function - find the pointer that is located in .rodata
             data_ref = idaapi.get_first_dref_to(addr)
             while data_ref != idc.BADADDR:
-                if 'rodata' in idc.get_segm_name(data_ref):
+                if idc.get_segm_name(data_ref) in possible_seg:
                     # Only rename things that are currently listed as an offset; eg. off_9120B0
                     if 'off_' in idc.get_name(data_ref):
                         if idc.set_name(data_ref, f"{name}_ptr", flags=idaapi.SN_FORCE):
