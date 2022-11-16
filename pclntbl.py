@@ -684,7 +684,7 @@ class FuncStruct():
 
 def parse_func_pointer():
     renamed = 0
-    possible_seg = ("rodata", "LOAD", ".rdata", ".data")
+    possible_seg = ("rodata", ".rodata", "LOAD", ".rdata", ".data")
 
     for segea in idautils.Segments():
         for addr in idautils.Functions(segea, idc.get_segm_end(segea)):
