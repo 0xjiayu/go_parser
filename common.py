@@ -2,20 +2,36 @@
 # -*- coding: UTF-8 -*-
 import idc, idaapi, idautils
 import string
-import ida_idaapi
 
+finfo = idaapi.get_inf_structure()
 DEBUG = False
 ADDR_SZ = 4 # Default: 32-bit
 GOVER = ""
-MAX_EA = ida_idaapi.get_inf_structure().max_ea
+MAX_EA = finfo.max_ea
+CPU_ARCH = "x86" # Default CPU Arch
+ENDIAN = 0 # 0: little endian; 1: big endian
 
 # Magic number of pclinetable header
 MAGIC_112 = 0xFFFFFFFB  # Magic Number from version 1.12
 MAGIC_116 = 0xFFFFFFFA  # Magic Number from version 1.16
 MAGIC_118 = 0xFFFFFFF0  # Magic Number from version 1.18
 
-if idaapi.get_inf_structure().is_64bit():
+
+if finfo.is_64bit():
     ADDR_SZ = 8
+
+proc_name = finfo.procname.lower()
+if proc_name == "metapc":
+    if ADDR_SZ == 8:
+        CPU_ARCH = "x64"
+else:
+    CPU_ARCH = proc_name
+
+try:
+    is_be = finfo.is_be()
+except:
+    is_be = finfo.mf
+ENDIAN = 1 if is_be else 0
 
 def _info(info_str):
     print(info_str)
@@ -68,20 +84,20 @@ def read_mem(addr, forced_addr_sz=None, read_only=False):
 
     if forced_addr_sz == 2:
         if not read_only:
-            idc.create_data(addr, idc.FF_WORD, 2, ida_idaapi.BADADDR)
+            idc.create_data(addr, idc.FF_WORD, 2, idc.BADADDR)
             idaapi.auto_wait()
         value = idc.get_wide_word(addr) & 0xFFFF
         return 0 if value == idc.BADADDR else value
     if forced_addr_sz == 4 or ADDR_SZ == 4:
         if not read_only:
-            idc.create_data(addr,idc.FF_DWORD, 4, ida_idaapi.BADADDR)
+            idc.create_data(addr,idc.FF_DWORD, 4, idc.BADADDR)
             idaapi.auto_wait()
         value = idc.get_wide_dword(addr) & 0xFFFFFFFF
         return 0 if value == idc.BADADDR else value
 
     if forced_addr_sz == 8 or ADDR_SZ == 8:
         if not read_only:
-            idc.create_data(addr, idc.FF_QWORD, 8, ida_idaapi.BADADDR)
+            idc.create_data(addr, idc.FF_QWORD, 8, idc.BADADDR)
             idaapi.auto_wait()
         value = idc.get_qword(addr) & 0xFFFFFFFFFFFFFFFF
         return 0 if value == idc.BADADDR else value

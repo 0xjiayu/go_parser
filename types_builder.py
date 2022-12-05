@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-import idc, idaapi
+import idc, idaapi, idautils
 idaapi.require("moduledata")
 idaapi.require("common")
 from common import read_mem, ADDR_SZ
@@ -46,7 +46,46 @@ class TypesParser():
             #    common._error("Failed to parse type_off( 0x%x ) @ 0x%x" % (type_off, type_addr))
             #    raise Exception(e)
 
-        common._info(f"types building finished. Total types number: {len(self.parsed_types.keys())}")
+        common._info(f"Standard types building finished. Total types count: {len(self.parsed_types.keys())}")
+
+        self._parse_extra_types()
+
+    def _parse_extra_types(self):
+        '''
+        Parse extra types which missed by standard moduledata types
+        '''
+        common._debug("Parsing extra types...")
+        runtime_newobject_addr = idc.get_name_ea_simple("runtime_newobject")
+        if runtime_newobject_addr == idc.BADADDR:
+            common._debug("runtime_newobject not found")
+            return
+
+        std_types_cnt = len(self.parsed_types.keys())
+        for xrf in idautils.XrefsTo(runtime_newobject_addr):
+            if xrf.type != 17: # type 17: Code_Near_Call
+                continue
+
+            xrf_addr = xrf.frm
+            target_type_addr = idc.BADADDR
+            if common.CPU_ARCH == "x86" or common.CPU_ARCH == "x64": # x86/x64 Little Endian
+                target_type_addr = _get_target_addr_x86(xrf_addr)
+            elif common.CPU_ARCH == "arm" and common.ADDR_SZ == 4: # ARM 32-bit Little Endian
+                target_type_addr = _get_target_addr_arm32(xrf_addr)
+            elif common.CPU_ARCH == "arm" and common.ADDR_SZ == 8: # ARM 64-bit Little Endian
+                target_type_addr = _get_target_addr_arm64(xrf_addr)
+            elif common.CPU_ARCH.startswith("mips") and common.ADDR_SZ == 4: # MIPS 32
+                target_type_addr = _get_target_addr_mips32(xrf_addr)
+            if target_type_addr == idc.BADADDR:
+                common._debug("Failed to find target type addr for @ {xrf_addr:#x}")
+                continue
+
+            if target_type_addr not in self.parsed_types.keys():
+                common._debug(f"Parsing extra type @ {target_type_addr:#x}, xrf_from:@ {xrf_addr:#x}")
+                self.parse_type(type_addr=target_type_addr)
+
+        extra_type_cnt = len(self.parsed_types.keys()) - std_types_cnt
+        common._info(f"Extra types building done, total count: {extra_type_cnt}")
+
 
     def parse_type(self, type_addr=idc.BADADDR, depth=1):
         if type_addr == 0 or type_addr == idc.BADADDR:
@@ -1262,3 +1301,89 @@ class RawType():
 
     def __str__(self):
         return "> raw type: %s\n" % self.name
+
+def _get_target_addr_x86(xrf_addr):
+    '''
+    Find target type addr for xrf_addr in x86/x64 little endian binary
+    '''
+    target_type_addr = idc.BADADDR
+    curr_addr = xrf_addr
+    for i in range(8): # Search back 8 insns at most
+        curr_addr = idc.prev_head(curr_addr)
+
+        mnem = idc.print_insn_mnem(curr_addr)
+        if mnem != "lea": continue
+
+        target_opnd_type = idc.get_operand_type(curr_addr, 0)
+        target_opnd_value = idc.get_operand_value(curr_addr, 0)
+        if target_opnd_type == 0x1 or target_opnd_value == 0x0: # Reg eax or rax
+            target_type_addr = idc.get_operand_value(curr_addr, 1)
+            if target_type_addr > 0:
+                break
+
+    return target_type_addr
+
+def _get_target_addr_arm32(xrf_addr):
+    '''
+    Find target type addr for xrf_addr in ARM 32-bit little endian binary
+    '''
+    target_type_addr = idc.BADADDR
+    curr_addr = xrf_addr
+    for i in range(8): # Search back 8 insns at most
+        curr_addr = idc.prev_head(curr_addr)
+
+        mnem = idc.print_insn_mnem(curr_addr)
+        if mnem != "LDR": continue
+
+        target_opnd_type = idc.get_operand_type(curr_addr, 0)
+        target_opnd_value = idc.get_operand_value(curr_addr, 0)
+        if target_opnd_type == 0x1 or target_opnd_value == 0x0: # Reg X0
+            target_type_addr_ptr = idc.get_operand_value(curr_addr, 1)
+            if target_type_addr_ptr > 0 and target_type_addr_ptr != idc.BADADDR:
+                target_type_addr = common.read_mem(target_type_addr_ptr, read_only=True)
+                if target_type_addr > 0:
+                    break
+
+    return target_type_addr
+
+def _get_target_addr_arm64(xrf_addr):
+    '''
+    Find target type addr for xrf_addr in ARM 64-bit little endian binary
+    '''
+    target_type_addr = idc.BADADDR
+    curr_addr = xrf_addr
+    for i in range(8): # Search back 8 insns at most
+        curr_addr = idc.prev_head(curr_addr)
+
+        mnem = idc.print_insn_mnem(curr_addr)
+        if mnem != "ADRL": continue
+
+        target_opnd_type = idc.get_operand_type(curr_addr, 0)
+        target_opnd_value = idc.get_operand_value(curr_addr, 0)
+        if target_opnd_type == 0x1 or target_opnd_value == 0x81: # Reg X0
+            target_type_addr = idc.get_operand_value(curr_addr, 1)
+            if target_type_addr > 0:
+                break
+
+    return target_type_addr
+
+def _get_target_addr_mips32(xrf_addr):
+    '''
+    Find target type addr for xrf_addr in MIPS 32-bit binary
+    '''
+    target_type_addr = idc.BADADDR
+    curr_addr = xrf_addr
+    for i in range(8): # Search back 8 insns at most
+        curr_addr = idc.prev_head(curr_addr)
+
+        mnem = idc.print_insn_mnem(curr_addr)
+        if mnem != "li": continue
+
+        target_opnd_type = idc.get_operand_type(curr_addr, 0)
+        target_opnd_value = idc.get_operand_value(curr_addr, 0)
+        if target_opnd_type == 0x1 or target_opnd_value <= 0x4: # Reg $at/$a0/$v0/$v1
+            target_type_addr = idc.get_operand_value(curr_addr, 1)
+            if target_type_addr > 0:
+                break
+
+    return target_type_addr

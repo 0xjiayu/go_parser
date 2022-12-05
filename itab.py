@@ -85,4 +85,4 @@ def parse_itab(moddata, type_parser):
         itab_cnt += 1
         curr_addr += common.ADDR_SZ
 
-    common._info("Itab parsing done, total number: %d" % itab_cnt)
+    common._info("Itab parsing done, total count: %d" % itab_cnt)
