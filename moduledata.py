@@ -72,11 +72,34 @@ def test_firstmoduledata(possible_addr, magic_number):
         if (mod_data.pcheader_addr + funcnametab_off) == mod_data.funcnametab_addr \
                 and (mod_data.pcheader_addr + filetab_off) == mod_data.filetab_addr \
                 and (mod_data.pcheader_addr + pctab_off) == mod_data.pctab_addr \
-                and (mod_data.pcheader_addr + pclntbl_off) == mod_data.pclntbl_addr \
-                and pcheader_textaddr == mod_data.text_addr:
+                and (mod_data.pcheader_addr + pclntbl_off) == mod_data.pclntbl_addr:
+                # and pcheader_textaddr == mod_data.text_addr:
             common._info(f"Find firstmoduledata @ {possible_addr:#x}, magic number: {magic_number:#x}")
             return True
         else:
+            if (mod_data.pcheader_addr + funcnametab_off) != mod_data.funcnametab_addr:
+                common._debug("Funcname table addr not eqeual")
+                common._debug(f"moddata.pcheader_addr: {mod_data.pcheader_addr:#x}")
+                common._debug(f"funcnametab_off: {funcnametab_off:#x}")
+                common._debug(f"moddata.funcnametab_addr: {mod_data.funcnametab_addr:#x}")
+
+            if (mod_data.pcheader_addr + filetab_off) != mod_data.filetab_addr:
+                common._debug("File table addr not equal.")
+                common._debug(f"moddata.pcheader_addr: {mod_data.pcheader_addr:#x}")
+                common._debug(f"pctab_off: {pctab_off:#x}")
+                common._debug(f"moddata.pctab_addr: {mod_data.pctab_addr:#x}")
+
+            if (mod_data.pcheader_addr + pclntbl_off) != mod_data.pclntbl_addr:
+                common._debug("pclntab addr not equal.")
+                common._debug(f"moddata.pcheader_addr: {mod_data.pcheader_addr:#x}")
+                common._debug(f"pclntbl_off: {pclntbl_off:#x}")
+                common._debug(f"moddata.pclntbl_addr: {mod_data.pclntbl_addr:#x}")
+
+            #if pcheader_textaddr != mod_data.text_addr:
+            #    common._debug("text addr not equal.")
+            #    common._debug(f"pcheader textaddr: {pcheader_textaddr:#x}")
+            #    common._debug(f"moddata textaddr: {mod_data.text_addr:#x}")
+
             common._debug(f"Not firstmoduledata addr: @ {possible_addr:#x}")
 
     return False
@@ -248,7 +271,7 @@ class ModuleData():
 
     type pcHeader struct {     // Go version 1.16+
         magic          uint32  // 0xFFFFFFFA
-        pad1, pad2     uint8   // 0,0
+        pad1, pad2     uint8   // 0, 0
         minLC          uint8   // min instruction size
         ptrSize        uint8   // size of a ptr in bytes
         nfunc          int     // number of functions in the module
@@ -263,7 +286,7 @@ class ModuleData():
     // pcHeader holds data used by the pclntab lookups.
     type pcHeader struct {     // Go version 1.18+
         magic          uint32  // 0xFFFFFFF0
-        pad1, pad2     uint8   // 0,0
+        pad1, pad2     uint8   // 0, 0
         minLC          uint8   // min instruction size
         ptrSize        uint8   // size of a ptr in bytes
         nfunc          int     // number of functions in the module
@@ -411,7 +434,7 @@ class ModuleData():
             self.type_cnt        = read_mem(self.start_addr + 31*ADDR_SZ, read_only=is_test)
             self.type_cap        = read_mem(self.start_addr + 32*ADDR_SZ, read_only=is_test)
             self.itablink_addr   = read_mem(self.start_addr + 33*ADDR_SZ, read_only=is_test)
-            self.itab_cnt         = read_mem(self.start_addr + 34*ADDR_SZ, read_only=is_test)
+            self.itab_cnt        = read_mem(self.start_addr + 34*ADDR_SZ, read_only=is_test)
             self.itab_cap        = read_mem(self.start_addr + 35*ADDR_SZ, read_only=is_test)
             self.ptab_addr       = read_mem(self.start_addr + 36*ADDR_SZ, read_only=is_test)
             self.ptab_sz         = read_mem(self.start_addr + 37*ADDR_SZ, read_only=is_test)
@@ -504,7 +527,7 @@ class ModuleData():
                 self.type_cnt        = read_mem(self.start_addr + 41*ADDR_SZ, read_only=is_test)
                 self.type_cap        = read_mem(self.start_addr + 42*ADDR_SZ, read_only=is_test)
                 self.itablink_addr   = read_mem(self.start_addr + 43*ADDR_SZ, read_only=is_test)
-                self.itab_cnt         = read_mem(self.start_addr + 44*ADDR_SZ, read_only=is_test)
+                self.itab_cnt        = read_mem(self.start_addr + 44*ADDR_SZ, read_only=is_test)
                 self.itab_cap        = read_mem(self.start_addr + 45*ADDR_SZ, read_only=is_test)
                 self.ptab_addr       = read_mem(self.start_addr + 46*ADDR_SZ, read_only=is_test)
                 self.ptab_sz         = read_mem(self.start_addr + 47*ADDR_SZ, read_only=is_test)
@@ -512,11 +535,11 @@ class ModuleData():
 
                 pluginpath_addr = read_mem(self.start_addr+49*ADDR_SZ, read_only=is_test)
                 pluginpath_len  = read_mem(self.start_addr+50*ADDR_SZ, read_only=is_test)
-                self.pluginpath = "" if (pluginpath_len==0x0 or pluginpath_addr ==0x0) else  idc.get_bytes(pluginpath_addr, pluginpath_len).decode()
+                self.pluginpath = "" if (pluginpath_len==0x0 or pluginpath_addr ==0x0) else idc.get_bytes(pluginpath_addr, pluginpath_len).decode()
 
                 modulename_addr = read_mem(self.start_addr+54*ADDR_SZ, read_only=is_test)
                 modulename_len  = read_mem(self.start_addr+55*ADDR_SZ, read_only=is_test)
-                self.modulename ="" if modulename_addr ==0x0 or modulename_len ==0 else idc.get_bytes(modulename_addr, modulename_len).decode()
+                self.modulename = "" if modulename_addr ==0x0 or modulename_len ==0 else idc.get_bytes(modulename_addr, modulename_len).decode()
 
                 self.hasmain = idc.get_wide_byte(self.start_addr+59*ADDR_SZ)
                 self.next    = read_mem(self.start_addr+64*ADDR_SZ+1, read_only=is_test)
@@ -531,7 +554,7 @@ class ModuleData():
                 self.type_cnt        = read_mem(self.start_addr + 43*ADDR_SZ, read_only=is_test)
                 self.type_cap        = read_mem(self.start_addr + 44*ADDR_SZ, read_only=is_test)
                 self.itablink_addr   = read_mem(self.start_addr + 45*ADDR_SZ, read_only=is_test)
-                self.itab_cnt         = read_mem(self.start_addr + 46*ADDR_SZ, read_only=is_test)
+                self.itab_cnt        = read_mem(self.start_addr + 46*ADDR_SZ, read_only=is_test)
                 self.itab_cap        = read_mem(self.start_addr + 47*ADDR_SZ, read_only=is_test)
                 self.ptab_addr       = read_mem(self.start_addr + 48*ADDR_SZ, read_only=is_test)
                 self.ptab_sz         = read_mem(self.start_addr + 49*ADDR_SZ, read_only=is_test)
@@ -539,7 +562,7 @@ class ModuleData():
 
                 pluginpath_addr = read_mem(self.start_addr + 51*ADDR_SZ, read_only=is_test)
                 pluginpath_len  = read_mem(self.start_addr + 52*ADDR_SZ, read_only=is_test)
-                self.pluginpath = "" if (pluginpath_len == 0x0 or pluginpath_addr == 0x0) else  idc.get_bytes(pluginpath_addr, pluginpath_len).decode()
+                self.pluginpath = "" if (pluginpath_len == 0x0 or pluginpath_addr == 0x0) else idc.get_bytes(pluginpath_addr, pluginpath_len).decode()
 
                 modulename_addr = read_mem(self.start_addr + 56*ADDR_SZ, read_only=is_test)
                 modulename_len  = read_mem(self.start_addr + 57*ADDR_SZ, read_only=is_test)
