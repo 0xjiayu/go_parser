@@ -35,6 +35,7 @@ def main():
     if magic_number == common.MAGIC_112:
         pclntab = pclntbl.Pclntbl(firstmoddata.pclntbl_addr, magic_number)
     else:
+        # common._info("pppppppppcheaer: " + hex(firstmoddata.pcheader_addr))
         pclntab = pclntbl.Pclntbl(firstmoddata.pcheader_addr, magic_number)
     pclntab.parse()
 
@@ -51,6 +52,7 @@ def main():
 
     # parse itabs
     itab.parse_itab(firstmoddata, type_parser)
+
 
 if __name__ == '__main__':
     main()

@@ -5,17 +5,17 @@ import string
 
 finfo = idaapi.get_inf_structure()
 DEBUG = False
-ADDR_SZ = 4 # Default: 32-bit
+ADDR_SZ = 4  # Default: 32-bit
 GOVER = ""
 MAX_EA = finfo.max_ea
-CPU_ARCH = "x86" # Default CPU Arch
-ENDIAN = 0 # 0: little endian; 1: big endian
+CPU_ARCH = "x86"  # Default CPU Arch
+ENDIAN = 0  # 0: little endian; 1: big endian
 
 # Magic number of pclinetable header
 MAGIC_112 = 0xFFFFFFFB  # Magic Number from version 1.12
 MAGIC_116 = 0xFFFFFFFA  # Magic Number from version 1.16
 MAGIC_118 = 0xFFFFFFF0  # Magic Number from version 1.18
-
+MAGIC_120 = 0xFFFFFFF1  # Magic Number from version 1.20
 
 if finfo.is_64bit():
     ADDR_SZ = 8
@@ -33,16 +33,20 @@ except:
     is_be = finfo.mf
 ENDIAN = 1 if is_be else 0
 
+
 def _info(info_str):
     print(info_str)
 
+
 def _error(err_str):
     print('[ERROR] - %s' % err_str)
+
 
 def _debug(dbg_str):
     global DEBUG
     if DEBUG:
         print('[DEBUG] - %s' % dbg_str)
+
 
 def get_seg(seg_names):
     seg = None
@@ -53,6 +57,7 @@ def get_seg(seg_names):
 
     return seg
 
+
 def get_seg_start_addr_from_rdata(seg_names):
     for seg_name in seg_names:
         for ea, name in idautils.Names():
@@ -61,9 +66,11 @@ def get_seg_start_addr_from_rdata(seg_names):
 
     return None
 
+
 def get_text_seg():
     # .text found in PE & ELF binaries, __text found in macho binaries
     return get_seg(['.text', '__text'])
+
 
 def find_func_by_name(func_name):
     for segea in idautils.Segments():
@@ -72,10 +79,11 @@ def find_func_by_name(func_name):
                 return idaapi.get_func(funcea)
     return None
 
+
 def read_mem(addr, forced_addr_sz=None, read_only=False):
     global ADDR_SZ
 
-    if not read_only: # Set bytes to undefined firstly
+    if not read_only:  # Set bytes to undefined firstly
         if forced_addr_sz:
             idc.del_items(addr, forced_addr_sz, idc.DELIT_SIMPLE)
         else:
@@ -90,7 +98,7 @@ def read_mem(addr, forced_addr_sz=None, read_only=False):
         return 0 if value == idc.BADADDR else value
     if forced_addr_sz == 4 or ADDR_SZ == 4:
         if not read_only:
-            idc.create_data(addr,idc.FF_DWORD, 4, idc.BADADDR)
+            idc.create_data(addr, idc.FF_DWORD, 4, idc.BADADDR)
             idaapi.auto_wait()
         value = idc.get_wide_dword(addr) & 0xFFFFFFFF
         return 0 if value == idc.BADADDR else value
@@ -101,6 +109,7 @@ def read_mem(addr, forced_addr_sz=None, read_only=False):
             idaapi.auto_wait()
         value = idc.get_qword(addr) & 0xFFFFFFFFFFFFFFFF
         return 0 if value == idc.BADADDR else value
+
 
 def get_goroot():
     '''
@@ -187,9 +196,9 @@ def get_goroot():
                 raise Exception("Invalid GOROOT Address ang Length")
 
             goroot_path_str = idc.get_bytes(goroot_path_addr, goroot_path_len).decode("utf-8", errors="ignore")
-            if goroot_path_str is None or len(goroot_path_str)==0:
+            if goroot_path_str is None or len(goroot_path_str) == 0:
                 raise Exception("Invalid GOROOT")
-            idc.create_strlit(goroot_path_addr, goroot_path_addr+goroot_path_len)
+            idc.create_strlit(goroot_path_addr, goroot_path_addr + goroot_path_len)
             idaapi.auto_wait()
             break
 
@@ -197,6 +206,7 @@ def get_goroot():
         _info("Go ROOT Path: %s\n" % goroot_path_str)
 
     return goroot_path_str.replace("\\", "/")
+
 
 def find_ret_cb(flow_chart):
     '''
@@ -211,8 +221,10 @@ def find_ret_cb(flow_chart):
     return ret_cb_list
 
 
-STRIP_CHARS = [ '(', ')', '[', ']', '{', '}', ' ', '"' ]
-REPLACE_CHARS = ['.', '*', '-', ',', ';', ':', '/', '\xb7' ]
+STRIP_CHARS = ['(', ')', '[', ']', '{', '}', ' ', '"']
+REPLACE_CHARS = ['.', '*', '-', ',', ';', ':', '/', '\xb7']
+
+
 def clean_function_name(name_str):
     '''
     Clean generic 'bad' characters
@@ -227,6 +239,7 @@ def clean_function_name(name_str):
         name_str = name_str.replace(c, '_')
 
     return name_str
+
 
 def get_goversion():
     global GOVER
@@ -244,7 +257,7 @@ def get_goversion():
         _debug("Current flowchart start addr: 0x%x" % fc.start_ea)
         # mov     dword_AD744C, 7 ; dword_AD744C stores length of Go Version string
         if idc.print_insn_mnem(fc.start_ea) == "mov" and idc.get_operand_type(fc.start_ea, 0) == 2 \
-            and str(idc.get_operand_value(fc.start_ea, 1)) == "7":
+                and str(idc.get_operand_value(fc.start_ea, 1)) == "7":
             _debug("Find length of go version string @ 0x%x" % fc.start_ea)
             possible_goversion_len_addr = idc.get_operand_value(fc.start_ea, 0)
             _debug("Possible go version string len addr: 0x%x" % possible_goversion_len_addr)
@@ -253,7 +266,7 @@ def get_goversion():
             _debug("Possible go version string addr: 0x%x" % possible_goversion_str_addr)
             possible_goversion_len = read_mem(possible_goversion_len_addr)
             _debug("Real go version string len: %d" % possible_goversion_len)
-            if possible_goversion_len >=5 and possible_goversion_len < 10:
+            if possible_goversion_len >= 5 and possible_goversion_len < 10:
                 if idc.create_strlit(possible_goversion_str_addr, possible_goversion_str_addr + possible_goversion_len):
                     idaapi.auto_wait()
                     goversion_str = idc.get_bytes(possible_goversion_str_addr, possible_goversion_len).decode()

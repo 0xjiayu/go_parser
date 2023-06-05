@@ -1,18 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 import idc, idaapi, ida_segment
+
 idaapi.require("pclntbl")
 idaapi.require("common")
 from common import ADDR_SZ, read_mem
+
 
 def is_stripped():
     '''
     Check Binary file if is stripped by find [.go.plt] segment
     '''
     goplt_seg = common.get_seg([".go.plt", "__go_plt"])
-    if not goplt_seg: # None
-        return True # is stripped
-    return False # not stripped
+    if not goplt_seg:  # None
+        return True  # is stripped
+    return False  # not stripped
+
 
 def get_mdata_seg_addr():
     seg_start_addr = 0
@@ -40,6 +43,7 @@ def test_firstmoduledata(possible_addr, magic_number):
     '''
     mod_data = ModuleData(possible_addr, magic_number)
     mod_data.parse(is_test=True)
+    # mod_data.parse(is_test=False)
 
     if magic_number == common.MAGIC_112:
         if read_mem(mod_data.pclntbl_addr + 8 + ADDR_SZ, read_only=True) == mod_data.text_addr:
@@ -48,10 +52,10 @@ def test_firstmoduledata(possible_addr, magic_number):
         else:
             common._debug(f"Not firstmoduledata addr: @ {possible_addr:#x}")
     elif magic_number == common.MAGIC_116:
-        funcnametab_off = read_mem(mod_data.pcheader_addr + 8 + 2*ADDR_SZ, read_only=True)
-        filetab_off     = read_mem(mod_data.pcheader_addr + 8 + 4*ADDR_SZ, read_only=True)
-        pctab_off       = read_mem(mod_data.pcheader_addr + 8 + 5*ADDR_SZ, read_only=True)
-        pclntbl_off     = read_mem(mod_data.pcheader_addr + 8 + 6*ADDR_SZ, read_only=True)
+        funcnametab_off = read_mem(mod_data.pcheader_addr + 8 + 2 * ADDR_SZ, read_only=True)
+        filetab_off = read_mem(mod_data.pcheader_addr + 8 + 4 * ADDR_SZ, read_only=True)
+        pctab_off = read_mem(mod_data.pcheader_addr + 8 + 5 * ADDR_SZ, read_only=True)
+        pclntbl_off = read_mem(mod_data.pcheader_addr + 8 + 6 * ADDR_SZ, read_only=True)
 
         if (mod_data.pcheader_addr + funcnametab_off) == mod_data.funcnametab_addr \
                 and (mod_data.pcheader_addr + filetab_off) == mod_data.filetab_addr \
@@ -61,19 +65,19 @@ def test_firstmoduledata(possible_addr, magic_number):
             return True
         else:
             common._debug(f"Not firstmoduledata addr: @ {possible_addr:#x}")
-    elif magic_number == common.MAGIC_118:
-        funcnametab_off = read_mem(mod_data.pcheader_addr + 8 + 3*ADDR_SZ, read_only=True)
-        filetab_off     = read_mem(mod_data.pcheader_addr + 8 + 5*ADDR_SZ, read_only=True)
-        pctab_off       = read_mem(mod_data.pcheader_addr + 8 + 6*ADDR_SZ, read_only=True)
-        pclntbl_off     = read_mem(mod_data.pcheader_addr + 8 + 7*ADDR_SZ, read_only=True)
+    elif magic_number == common.MAGIC_120:
+        funcnametab_off = read_mem(mod_data.pcheader_addr + 8 + 3 * ADDR_SZ, read_only=True)
+        filetab_off = read_mem(mod_data.pcheader_addr + 8 + 5 * ADDR_SZ, read_only=True)
+        pctab_off = read_mem(mod_data.pcheader_addr + 8 + 6 * ADDR_SZ, read_only=True)
+        pclntbl_off = read_mem(mod_data.pcheader_addr + 8 + 7 * ADDR_SZ, read_only=True)
 
-        pcheader_textaddr = read_mem(mod_data.pcheader_addr + 8 + 2*ADDR_SZ, read_only=True)
+        pcheader_textaddr = read_mem(mod_data.pcheader_addr + 8 + 2 * ADDR_SZ, read_only=True)
 
         if (mod_data.pcheader_addr + funcnametab_off) == mod_data.funcnametab_addr \
                 and (mod_data.pcheader_addr + filetab_off) == mod_data.filetab_addr \
                 and (mod_data.pcheader_addr + pctab_off) == mod_data.pctab_addr \
                 and (mod_data.pcheader_addr + pclntbl_off) == mod_data.pclntbl_addr:
-                # and pcheader_textaddr == mod_data.text_addr:
+            # and pcheader_textaddr == mod_data.text_addr:
             common._info(f"Find firstmoduledata @ {possible_addr:#x}, magic number: {magic_number:#x}")
             return True
         else:
@@ -95,14 +99,30 @@ def test_firstmoduledata(possible_addr, magic_number):
                 common._debug(f"pclntbl_off: {pclntbl_off:#x}")
                 common._debug(f"moddata.pclntbl_addr: {mod_data.pclntbl_addr:#x}")
 
-            #if pcheader_textaddr != mod_data.text_addr:
+            # if pcheader_textaddr != mod_data.text_addr:
             #    common._debug("text addr not equal.")
             #    common._debug(f"pcheader textaddr: {pcheader_textaddr:#x}")
             #    common._debug(f"moddata textaddr: {mod_data.text_addr:#x}")
 
             common._debug(f"Not firstmoduledata addr: @ {possible_addr:#x}")
-
+    # elif magic_number == common.MAGIC_120:
+    #     # common._info(f"pcheader: 0x{hex(mod_data.pcheader_addr)}")
+    #     funcnametab_off = read_mem(mod_data.pcheader_addr + 8 + 3 * ADDR_SZ, read_only=True)
+    #     filetab_off = read_mem(mod_data.pcheader_addr + 8 + 5 * ADDR_SZ, read_only=True)
+    #     pctab_off = read_mem(mod_data.pcheader_addr + 8 + 6 * ADDR_SZ, read_only=True)
+    #     pclntbl_off = read_mem(mod_data.pcheader_addr + 8 + 7 * ADDR_SZ, read_only=True)
+    #     common._info(mod_data.pcheader_addr + funcnametab_off)
+    #     common._info(mod_data.funcnametab_addr)
+    #     if (mod_data.pcheader_addr + funcnametab_off) == mod_data.funcnametab_addr :
+    #         return True
+    #         # and (mod_data.pcheader_addr + filetab_off) == mod_data.filetab_addr \
+    #         # and (mod_data.pcheader_addr + pctab_off) == mod_data.pctab_addr \
+    #         # and (mod_data.pcheader_addr + pclntbl_off) == mod_data.pclntbl_addr:
+    #     # and pcheader_textaddr == mod_data.text_addr:
+    #     common._info(f"Find firstmoduledata @ {possible_addr:#x}, magic number: {magic_number:#x}")
+    #     return True
     return False
+
 
 def find_first_moduledata_addr_by_brute(magic_number):
     first_moduledata_addr = idc.BADADDR
@@ -110,12 +130,13 @@ def find_first_moduledata_addr_by_brute(magic_number):
     segn = ida_segment.get_segm_qty()
     for idx in range(segn):
         curr_seg = ida_segment.getnseg(idx)
-        if curr_seg.type == 3: # Pure Data segment
+        if curr_seg.type == 3:  # Pure Data segment
             curr_addr = curr_seg.start_ea
-            #common._info(f"Search seg [{curr_seg.name}], start: {curr_seg.start_ea:#x}, end: {curr_seg.end_ea:#x}, type: {curr_seg.type}")
+            # common._info(f"Search seg [{curr_seg.name}], start: {curr_seg.start_ea:#x}, end: {curr_seg.end_ea:#x}, type: {curr_seg.type}")
             while curr_addr <= curr_seg.end_ea:
-                #common._debug(f"Test firstmoduledata @ {curr_addr:#x} for magic_number {magic_number:#x}")
-                if idc.get_wide_dword(read_mem(curr_addr, read_only=True)) & 0xFFFFFFFF == magic_number: # possible firstmoduledata
+                # common._debug(f"Test firstmoduledata @ {curr_addr:#x} for magic_number {magic_number:#x}")
+                if idc.get_wide_dword(
+                        read_mem(curr_addr, read_only=True)) & 0xFFFFFFFF == magic_number:  # possible firstmoduledata
                     if test_firstmoduledata(curr_addr, magic_number):
                         break
                 curr_addr += ADDR_SZ
@@ -128,31 +149,32 @@ def find_first_moduledata_addr_by_brute(magic_number):
 
     return first_moduledata_addr
 
+
 def find_first_moduledata_addr():
     first_moduledata_addr = idc.BADADDR
-    magic_number = common.MAGIC_112 # Default magic number
+    magic_number = common.MAGIC_112  # Default magic number
 
-    if not is_stripped(): # not stripped, find firstmoduledata by symbol name
+    if not is_stripped():  # not stripped, find firstmoduledata by symbol name
         common._debug("Binary file is not stripped")
         for addr, name in idautils.Names():
             if name == "runtime.firstmoduledata":
                 first_moduledata_addr = addr
                 break
-    else: # is stripped, find firstmodule data by bruteforce searching
+    else:  # is stripped, find firstmodule data by bruteforce searching
         common._debug("Binary file is stripped")
-        magic_numbers = [common.MAGIC_116, common.MAGIC_112, common.MAGIC_118]
+        magic_numbers = [common.MAGIC_116, common.MAGIC_112, common.MAGIC_118, common.MAGIC_120]
         # firstmoduledata is often contained in segment [.noptrdata]
         mdata_seg_addr = get_mdata_seg_addr()
         common._info("Finding firstmoduledata object...")
         if mdata_seg_addr == 0:
             common._error("Failed to find valid segment [.noptrdata]")
 
-        if mdata_seg_addr >0:
+        if mdata_seg_addr > 0:
             for tmp_magic_number in magic_numbers:
                 common._info(f"Finding firstmoduledata with magic number {tmp_magic_number:#x} ...")
                 curr_addr = mdata_seg_addr
                 while curr_addr <= common.MAX_EA:
-                    #common._debug(f"Test firstmoduledata @ {curr_addr:#x} for magic_number {tmp_magic_number:#x}")
+                    # common._debug(f"Test firstmoduledata @ {curr_addr:#x} for magic_number {tmp_magic_number:#x}")
                     if idc.get_wide_dword(read_mem(curr_addr, read_only=True)) & 0xFFFFFFFF == tmp_magic_number:
                         # possible firstmoduledata
                         if test_firstmoduledata(curr_addr, tmp_magic_number):
@@ -169,6 +191,7 @@ def find_first_moduledata_addr():
             for tmp_magic_number in magic_numbers:
                 common._info(f"Finding firstmoduledata with magic number {tmp_magic_number:#x} by bruteforcing...")
                 first_moduledata_addr = find_first_moduledata_addr_by_brute(tmp_magic_number)
+                # common._info(tmp_magic_number, first_moduledata_addr)
                 if first_moduledata_addr != idc.BADADDR:
                     magic_number = tmp_magic_number
                     break
@@ -177,6 +200,7 @@ def find_first_moduledata_addr():
             raise Exception("Failed to find firstmoduledata address!")
 
     return first_moduledata_addr, magic_number
+
 
 class ModuleData():
     '''
@@ -299,360 +323,441 @@ class ModuleData():
         pclnOffset     uintptr // offset to the pclntab variable from pcHeader
     }
     '''
+
     def __init__(self, start_addr, magic_number):
-        self.start_addr      = start_addr
-        self.magic_number    = magic_number
-        self.pcheader_addr   = idc.BADADDR  # Starts from version 1.16
-        self.pclntbl_addr    = idc.BADADDR
-        self.pclntbl_sz      = 0
-        self.pclntbl_cap     = 0
-        self.ftab_addr       = idc.BADADDR
-        self.func_sz         = 0
-        self.ftab_cap        = 0
-        self.filetab_addr    = idc.BADADDR
-        self.srcfile_sz      = 0
+        self.start_addr = start_addr
+        self.magic_number = magic_number
+        self.pcheader_addr = idc.BADADDR  # Starts from version 1.16
+        self.pclntbl_addr = idc.BADADDR
+        self.pclntbl_sz = 0
+        self.pclntbl_cap = 0
+        self.ftab_addr = idc.BADADDR
+        self.func_sz = 0
+        self.ftab_cap = 0
+        self.filetab_addr = idc.BADADDR
+        self.srcfile_sz = 0
         self.srcfile_tab_cap = 0
-        self.findfunctab     = idc.BADADDR
-        self.min_pc          = idc.BADADDR
-        self.max_pc          = idc.BADADDR
-        self.text_addr       = idc.BADADDR
-        self.etext_addr      = idc.BADADDR
-        self.noptrdata_addr  = idc.BADADDR
+        self.findfunctab = idc.BADADDR
+        self.min_pc = idc.BADADDR
+        self.max_pc = idc.BADADDR
+        self.text_addr = idc.BADADDR
+        self.etext_addr = idc.BADADDR
+        self.noptrdata_addr = idc.BADADDR
         self.enoptrdata_addr = idc.BADADDR
-        self.data_addr       = idc.BADADDR
-        self.edata_addr      = idc.BADADDR
-        self.bss_addr        = idc.BADADDR
-        self.ebss_addr       = idc.BADADDR
-        self.noptrbss_addr   = idc.BADADDR
-        self.enoptrbss_addr  = idc.BADADDR
-        self.end_addr        = idc.BADADDR
-        self.gcdata_addr     = idc.BADADDR
-        self.gcbss_addr      = idc.BADADDR
-        self.types_addr      = idc.BADADDR
-        self.etypes_addr     = idc.BADADDR
+        self.data_addr = idc.BADADDR
+        self.edata_addr = idc.BADADDR
+        self.bss_addr = idc.BADADDR
+        self.ebss_addr = idc.BADADDR
+        self.noptrbss_addr = idc.BADADDR
+        self.enoptrbss_addr = idc.BADADDR
+        self.end_addr = idc.BADADDR
+        self.covctrs = idc.BADADDR
+        self.ecovstrs = idc.BADADDR
+        self.gcdata_addr = idc.BADADDR
+        self.gcbss_addr = idc.BADADDR
+        self.types_addr = idc.BADADDR
+        self.etypes_addr = idc.BADADDR
         self.textsecmap_addr = idc.BADADDR
-        self.textsecmap_len  = 0
-        self.textsecmap_cap  = 0
-        self.typelink_addr   = idc.BADADDR
-        self.type_cnt        = 0
-        self.type_cap        = 0
-        self.itablink_addr   = idc.BADADDR
-        self.itab_cnt         = 0
-        self.itab_cap        = 0
-        self.ptab_addr       = idc.BADADDR
-        self.ptab_sz         = 0
-        self.ptab_cap        = 0
-        self.pluginpath      = ""
-        self.modulename      = ""
-        self.hasmain         = False
-        self.next            = idc.BADADDR
+        self.textsecmap_len = 0
+        self.textsecmap_cap = 0
+        self.typelink_addr = idc.BADADDR
+        self.type_cnt = 0
+        self.type_cap = 0
+        self.itablink_addr = idc.BADADDR
+        self.itab_cnt = 0
+        self.itab_cap = 0
+        self.ptab_addr = idc.BADADDR
+        self.ptab_sz = 0
+        self.ptab_cap = 0
+        self.pluginpath = ""
+        self.modulename = ""
+        self.hasmain = False
+        self.next = idc.BADADDR
 
         # Go 1.16 +
         self.funcnametab_addr = idc.BADADDR
-        self.funcnametab_sz   = 0
-        self.funcnametab_cap  = 0
-        self.cutab_addr       = idc.BADADDR
-        self.cutab_sz         = 0
-        self.cutab_cap        = 0
-        self.pctab_addr       = idc.BADADDR
-        self.pctab_sz         = 0
-        self.pctab_cap        = 0
+        self.funcnametab_sz = 0
+        self.funcnametab_cap = 0
+        self.cutab_addr = idc.BADADDR
+        self.cutab_sz = 0
+        self.cutab_cap = 0
+        self.pctab_addr = idc.BADADDR
+        self.pctab_sz = 0
+        self.pctab_cap = 0
         # Go 1.18+
-        self.rodata_addr      = idc.BADADDR
-        self.gofunc_addr      = idc.BADADDR
-
+        self.rodata_addr = idc.BADADDR
+        self.gofunc_addr = idc.BADADDR
 
     def parse(self, is_test=False):
         if is_test:
             common._info(f"Test firstmoduledata addr: {self.start_addr:#x}")
 
         if self.magic_number == common.MAGIC_112:
-            self.pclntbl_addr    = read_mem(self.start_addr, read_only=is_test)
-            self.pclntbl_sz      = read_mem(self.start_addr + ADDR_SZ, read_only=is_test)
-            self.pclntbl_cap     = read_mem(self.start_addr + 2*ADDR_SZ, read_only=is_test)
-            self.ftab_addr       = read_mem(self.start_addr + 3*ADDR_SZ, read_only=is_test)
-            self.func_sz         = read_mem(self.start_addr + 4*ADDR_SZ, read_only=is_test)
-            self.ftab_cap        = read_mem(self.start_addr + 5*ADDR_SZ, read_only=is_test)
-            self.filetab_addr    = read_mem(self.start_addr + 6*ADDR_SZ, read_only=is_test)
-            self.srcfile_sz      = read_mem(self.start_addr + 7*ADDR_SZ, read_only=is_test)
-            self.srcfile_tab_cap = read_mem(self.start_addr + 8*ADDR_SZ, read_only=is_test)
-            self.findfunctab     = read_mem(self.start_addr + 9*ADDR_SZ, read_only=is_test)
-            self.min_pc          = read_mem(self.start_addr + 10*ADDR_SZ, read_only=is_test)
-            self.max_pc          = read_mem(self.start_addr + 11*ADDR_SZ, read_only=is_test)
-            self.text_addr       = read_mem(self.start_addr + 12*ADDR_SZ, read_only=is_test)
-            self.etext_addr      = read_mem(self.start_addr + 13*ADDR_SZ, read_only=is_test)
+            self.pclntbl_addr = read_mem(self.start_addr, read_only=is_test)
+            self.pclntbl_sz = read_mem(self.start_addr + ADDR_SZ, read_only=is_test)
+            self.pclntbl_cap = read_mem(self.start_addr + 2 * ADDR_SZ, read_only=is_test)
+            self.ftab_addr = read_mem(self.start_addr + 3 * ADDR_SZ, read_only=is_test)
+            self.func_sz = read_mem(self.start_addr + 4 * ADDR_SZ, read_only=is_test)
+            self.ftab_cap = read_mem(self.start_addr + 5 * ADDR_SZ, read_only=is_test)
+            self.filetab_addr = read_mem(self.start_addr + 6 * ADDR_SZ, read_only=is_test)
+            self.srcfile_sz = read_mem(self.start_addr + 7 * ADDR_SZ, read_only=is_test)
+            self.srcfile_tab_cap = read_mem(self.start_addr + 8 * ADDR_SZ, read_only=is_test)
+            self.findfunctab = read_mem(self.start_addr + 9 * ADDR_SZ, read_only=is_test)
+            self.min_pc = read_mem(self.start_addr + 10 * ADDR_SZ, read_only=is_test)
+            self.max_pc = read_mem(self.start_addr + 11 * ADDR_SZ, read_only=is_test)
+            self.text_addr = read_mem(self.start_addr + 12 * ADDR_SZ, read_only=is_test)
+            self.etext_addr = read_mem(self.start_addr + 13 * ADDR_SZ, read_only=is_test)
         else:
-            self.pcheader_addr    = read_mem(self.start_addr, read_only=is_test)
+            self.pcheader_addr = read_mem(self.start_addr, read_only=is_test)
             self.funcnametab_addr = read_mem(self.start_addr + ADDR_SZ, read_only=is_test)
-            self.funcnametab_sz   = read_mem(self.start_addr + 2*ADDR_SZ, read_only=is_test)
-            self.funcnametab_cap  = read_mem(self.start_addr + 3*ADDR_SZ, read_only=is_test)
-            self.cutab_addr       = read_mem(self.start_addr + 4*ADDR_SZ, read_only=is_test)
-            self.cutab_sz         = read_mem(self.start_addr + 5*ADDR_SZ, read_only=is_test)
-            self.cutab_cap        = read_mem(self.start_addr + 6*ADDR_SZ, read_only=is_test)
-            self.filetab_addr     = read_mem(self.start_addr + 7*ADDR_SZ, read_only=is_test)
-            self.srcfile_sz       = read_mem(self.start_addr + 8*ADDR_SZ, read_only=is_test)
-            self.srcfile_tab_cap  = read_mem(self.start_addr + 9*ADDR_SZ, read_only=is_test)
-            self.pctab_addr       = read_mem(self.start_addr + 10*ADDR_SZ, read_only=is_test)
-            self.pctab_sz         = read_mem(self.start_addr + 11*ADDR_SZ, read_only=is_test)
-            self.pctab_cap        = read_mem(self.start_addr + 12*ADDR_SZ, read_only=is_test)
-            self.pclntbl_addr     = read_mem(self.start_addr + 13*ADDR_SZ, read_only=is_test)
-            self.pclntbl_sz       = read_mem(self.start_addr + 14*ADDR_SZ, read_only=is_test)
-            self.pclntbl_cap      = read_mem(self.start_addr + 15*ADDR_SZ, read_only=is_test)
-            self.ftab_addr        = read_mem(self.start_addr + 16*ADDR_SZ, read_only=is_test)
-            self.func_sz          = read_mem(self.start_addr + 17*ADDR_SZ, read_only=is_test)
-            self.ftab_cap         = read_mem(self.start_addr + 18*ADDR_SZ, read_only=is_test)
-            self.findfunctab      = read_mem(self.start_addr + 19*ADDR_SZ, read_only=is_test)
-            self.min_pc           = read_mem(self.start_addr + 20*ADDR_SZ, read_only=is_test)
-            self.max_pc           = read_mem(self.start_addr + 21*ADDR_SZ, read_only=is_test)
-            self.text_addr        = read_mem(self.start_addr + 22*ADDR_SZ, read_only=is_test)
-            self.etext_addr       = read_mem(self.start_addr + 23*ADDR_SZ, read_only=is_test)
-
-        if is_test: return
+            self.funcnametab_sz = read_mem(self.start_addr + 2 * ADDR_SZ, read_only=is_test)
+            self.funcnametab_cap = read_mem(self.start_addr + 3 * ADDR_SZ, read_only=is_test)
+            self.cutab_addr = read_mem(self.start_addr + 4 * ADDR_SZ, read_only=is_test)
+            self.cutab_sz = read_mem(self.start_addr + 5 * ADDR_SZ, read_only=is_test)
+            self.cutab_cap = read_mem(self.start_addr + 6 * ADDR_SZ, read_only=is_test)
+            self.filetab_addr = read_mem(self.start_addr + 7 * ADDR_SZ, read_only=is_test)
+            self.srcfile_sz = read_mem(self.start_addr + 8 * ADDR_SZ, read_only=is_test)
+            self.srcfile_tab_cap = read_mem(self.start_addr + 9 * ADDR_SZ, read_only=is_test)
+            self.pctab_addr = read_mem(self.start_addr + 10 * ADDR_SZ, read_only=is_test)
+            self.pctab_sz = read_mem(self.start_addr + 11 * ADDR_SZ, read_only=is_test)
+            self.pctab_cap = read_mem(self.start_addr + 12 * ADDR_SZ, read_only=is_test)
+            self.pclntbl_addr = read_mem(self.start_addr + 13 * ADDR_SZ, read_only=is_test)
+            self.pclntbl_sz = read_mem(self.start_addr + 14 * ADDR_SZ, read_only=is_test)
+            self.pclntbl_cap = read_mem(self.start_addr + 15 * ADDR_SZ, read_only=is_test)
+            self.ftab_addr = read_mem(self.start_addr + 16 * ADDR_SZ, read_only=is_test)
+            self.func_sz = read_mem(self.start_addr + 17 * ADDR_SZ, read_only=is_test)
+            self.ftab_cap = read_mem(self.start_addr + 18 * ADDR_SZ, read_only=is_test)
+            self.findfunctab = read_mem(self.start_addr + 19 * ADDR_SZ, read_only=is_test)
+            self.min_pc = read_mem(self.start_addr + 20 * ADDR_SZ, read_only=is_test)
+            self.max_pc = read_mem(self.start_addr + 21 * ADDR_SZ, read_only=is_test)
+            self.text_addr = read_mem(self.start_addr + 22 * ADDR_SZ, read_only=is_test)
+            self.etext_addr = read_mem(self.start_addr + 23 * ADDR_SZ, read_only=is_test)
+            # common._info("here")
+        if is_test:
+            return
 
         # Set comment for firstmoduledata struct object
         idc.set_name(self.start_addr, "runtime.firstmoduledata", flags=idaapi.SN_FORCE)
         idaapi.auto_wait()
 
         if self.magic_number == common.MAGIC_112:
-            self.noptrdata_addr  = read_mem(self.start_addr + 14*ADDR_SZ, read_only=is_test)
-            self.enoptrdata_addr = read_mem(self.start_addr + 15*ADDR_SZ, read_only=is_test)
-            self.data_addr       = read_mem(self.start_addr + 16*ADDR_SZ, read_only=is_test)
-            self.edata_addr      = read_mem(self.start_addr + 17*ADDR_SZ, read_only=is_test)
-            self.bss_addr        = read_mem(self.start_addr + 18*ADDR_SZ, read_only=is_test)
-            self.ebss_addr       = read_mem(self.start_addr + 19*ADDR_SZ, read_only=is_test)
-            self.noptrbss_addr   = read_mem(self.start_addr + 20*ADDR_SZ, read_only=is_test)
-            self.enoptrbss_addr  = read_mem(self.start_addr + 21*ADDR_SZ, read_only=is_test)
-            self.end_addr        = read_mem(self.start_addr + 22*ADDR_SZ, read_only=is_test)
-            self.gcdata_addr     = read_mem(self.start_addr + 23*ADDR_SZ, read_only=is_test)
-            self.gcbss_addr      = read_mem(self.start_addr + 24*ADDR_SZ, read_only=is_test)
-            self.types_addr      = read_mem(self.start_addr + 25*ADDR_SZ, read_only=is_test)
-            self.etypes_addr     = read_mem(self.start_addr + 26*ADDR_SZ, read_only=is_test)
-            self.textsecmap_addr = read_mem(self.start_addr + 27*ADDR_SZ, read_only=is_test)
-            self.textsecmap_len  = read_mem(self.start_addr + 28*ADDR_SZ, read_only=is_test)
-            self.textsecmap_cap  = read_mem(self.start_addr + 29*ADDR_SZ, read_only=is_test)
-            self.typelink_addr   = read_mem(self.start_addr + 30*ADDR_SZ, read_only=is_test)
-            self.type_cnt        = read_mem(self.start_addr + 31*ADDR_SZ, read_only=is_test)
-            self.type_cap        = read_mem(self.start_addr + 32*ADDR_SZ, read_only=is_test)
-            self.itablink_addr   = read_mem(self.start_addr + 33*ADDR_SZ, read_only=is_test)
-            self.itab_cnt        = read_mem(self.start_addr + 34*ADDR_SZ, read_only=is_test)
-            self.itab_cap        = read_mem(self.start_addr + 35*ADDR_SZ, read_only=is_test)
-            self.ptab_addr       = read_mem(self.start_addr + 36*ADDR_SZ, read_only=is_test)
-            self.ptab_sz         = read_mem(self.start_addr + 37*ADDR_SZ, read_only=is_test)
-            self.ptab_cap        = read_mem(self.start_addr + 38*ADDR_SZ, read_only=is_test)
+            self.noptrdata_addr = read_mem(self.start_addr + 14 * ADDR_SZ, read_only=is_test)
+            self.enoptrdata_addr = read_mem(self.start_addr + 15 * ADDR_SZ, read_only=is_test)
+            self.data_addr = read_mem(self.start_addr + 16 * ADDR_SZ, read_only=is_test)
+            self.edata_addr = read_mem(self.start_addr + 17 * ADDR_SZ, read_only=is_test)
+            self.bss_addr = read_mem(self.start_addr + 18 * ADDR_SZ, read_only=is_test)
+            self.ebss_addr = read_mem(self.start_addr + 19 * ADDR_SZ, read_only=is_test)
+            self.noptrbss_addr = read_mem(self.start_addr + 20 * ADDR_SZ, read_only=is_test)
+            self.enoptrbss_addr = read_mem(self.start_addr + 21 * ADDR_SZ, read_only=is_test)
+            self.end_addr = read_mem(self.start_addr + 22 * ADDR_SZ, read_only=is_test)
+            self.gcdata_addr = read_mem(self.start_addr + 23 * ADDR_SZ, read_only=is_test)
+            self.gcbss_addr = read_mem(self.start_addr + 24 * ADDR_SZ, read_only=is_test)
+            self.types_addr = read_mem(self.start_addr + 25 * ADDR_SZ, read_only=is_test)
+            self.etypes_addr = read_mem(self.start_addr + 26 * ADDR_SZ, read_only=is_test)
+            self.textsecmap_addr = read_mem(self.start_addr + 27 * ADDR_SZ, read_only=is_test)
+            self.textsecmap_len = read_mem(self.start_addr + 28 * ADDR_SZ, read_only=is_test)
+            self.textsecmap_cap = read_mem(self.start_addr + 29 * ADDR_SZ, read_only=is_test)
+            self.typelink_addr = read_mem(self.start_addr + 30 * ADDR_SZ, read_only=is_test)
+            self.type_cnt = read_mem(self.start_addr + 31 * ADDR_SZ, read_only=is_test)
+            self.type_cap = read_mem(self.start_addr + 32 * ADDR_SZ, read_only=is_test)
+            self.itablink_addr = read_mem(self.start_addr + 33 * ADDR_SZ, read_only=is_test)
+            self.itab_cnt = read_mem(self.start_addr + 34 * ADDR_SZ, read_only=is_test)
+            self.itab_cap = read_mem(self.start_addr + 35 * ADDR_SZ, read_only=is_test)
+            self.ptab_addr = read_mem(self.start_addr + 36 * ADDR_SZ, read_only=is_test)
+            self.ptab_sz = read_mem(self.start_addr + 37 * ADDR_SZ, read_only=is_test)
+            self.ptab_cap = read_mem(self.start_addr + 38 * ADDR_SZ, read_only=is_test)
 
-            pluginpath_addr = read_mem(self.start_addr + 39*ADDR_SZ, read_only=is_test)
-            pluginpath_len  = read_mem(self.start_addr + 40*ADDR_SZ, read_only=is_test)
-            self.pluginpath = "" if (pluginpath_len==0x0 or pluginpath_addr ==0x0) else  idc.get_bytes(pluginpath_addr, pluginpath_len).decode()
+            pluginpath_addr = read_mem(self.start_addr + 39 * ADDR_SZ, read_only=is_test)
+            pluginpath_len = read_mem(self.start_addr + 40 * ADDR_SZ, read_only=is_test)
+            self.pluginpath = "" if (pluginpath_len == 0x0 or pluginpath_addr == 0x0) else idc.get_bytes(
+                pluginpath_addr, pluginpath_len).decode()
 
-            modulename_addr = read_mem(self.start_addr+44*ADDR_SZ, read_only=is_test)
-            modulename_len  = read_mem(self.start_addr+45*ADDR_SZ, read_only=is_test)
-            self.modulename ="" if modulename_addr == 0x0 or modulename_len == 0 else idc.get_bytes(modulename_addr, modulename_len).decode()
+            modulename_addr = read_mem(self.start_addr + 44 * ADDR_SZ, read_only=is_test)
+            modulename_len = read_mem(self.start_addr + 45 * ADDR_SZ, read_only=is_test)
+            self.modulename = "" if modulename_addr == 0x0 or modulename_len == 0 else idc.get_bytes(modulename_addr,
+                                                                                                     modulename_len).decode()
 
-            self.hasmain = idc.get_wide_byte(self.start_addr + 49*ADDR_SZ)
-            self.next    = read_mem(self.start_addr + 54*ADDR_SZ+1, read_only=is_test)
+            self.hasmain = idc.get_wide_byte(self.start_addr + 49 * ADDR_SZ)
+            self.next = read_mem(self.start_addr + 54 * ADDR_SZ + 1, read_only=is_test)
 
             # Set comment for each field
-            idc.set_cmt(self.start_addr, "pclntbl addr",0)
-            idc.set_cmt(self.start_addr + ADDR_SZ, "pclntbl size",0)
-            idc.set_cmt(self.start_addr + 2*ADDR_SZ, "pclntbl capacity",0)
-            idc.set_cmt(self.start_addr + 3*ADDR_SZ, "funcs table addr",0)
-            idc.set_cmt(self.start_addr + 4*ADDR_SZ, "funcs count",0)
-            idc.set_cmt(self.start_addr + 5*ADDR_SZ, "funcs table capacity",0)
-            idc.set_cmt(self.start_addr + 6*ADDR_SZ, "source files table addr",0)
-            idc.set_cmt(self.start_addr + 7*ADDR_SZ, "source files count",0)
-            idc.set_cmt(self.start_addr + 8*ADDR_SZ, "source files table capacity",0)
-            idc.set_cmt(self.start_addr + 9*ADDR_SZ, "findfunctable addr",0)
-            idc.set_cmt(self.start_addr + 10*ADDR_SZ, "min pc",0)
-            idc.set_cmt(self.start_addr + 11*ADDR_SZ, "max pc",0)
-            idc.set_cmt(self.start_addr + 12*ADDR_SZ, "text start addr",0)
-            idc.set_cmt(self.start_addr + 13*ADDR_SZ, "text end addr",0)
-            idc.set_cmt(self.start_addr + 14*ADDR_SZ, "noptrdata start addr",0)
-            idc.set_cmt(self.start_addr + 15*ADDR_SZ, "noptrdata end addr",0)
-            idc.set_cmt(self.start_addr + 16*ADDR_SZ, "data section start addr",0)
-            idc.set_cmt(self.start_addr + 17*ADDR_SZ, "data section end addr",0)
-            idc.set_cmt(self.start_addr + 18*ADDR_SZ, "bss start addr",0)
-            idc.set_cmt(self.start_addr + 19*ADDR_SZ, "bss end addr",0)
-            idc.set_cmt(self.start_addr + 20*ADDR_SZ, "noptrbss start addr",0)
-            idc.set_cmt(self.start_addr + 21*ADDR_SZ, "noptrbss end addr",0)
-            idc.set_cmt(self.start_addr + 22*ADDR_SZ, "end addr of whole image",0)
-            idc.set_cmt(self.start_addr + 23*ADDR_SZ, "gcdata addr",0)
-            idc.set_cmt(self.start_addr + 24*ADDR_SZ, "gcbss addr",0)
-            idc.set_cmt(self.start_addr + 25*ADDR_SZ, "types start addr",0)
-            idc.set_cmt(self.start_addr + 26*ADDR_SZ, "types end addr",0)
-            idc.set_cmt(self.start_addr + 27*ADDR_SZ, "text section map addr",0)
-            idc.set_cmt(self.start_addr + 28*ADDR_SZ, "text section map length",0)
-            idc.set_cmt(self.start_addr + 29*ADDR_SZ, "text section map capacity",0)
-            idc.set_cmt(self.start_addr + 30*ADDR_SZ, "typelink addr",0)
-            idc.set_cmt(self.start_addr + 31*ADDR_SZ, "types count",0)
-            idc.set_cmt(self.start_addr + 32*ADDR_SZ, "types table capacity",0)
-            idc.set_cmt(self.start_addr + 33*ADDR_SZ, "itabslink addr",0)
-            idc.set_cmt(self.start_addr + 34*ADDR_SZ, "itabs count",0)
-            idc.set_cmt(self.start_addr + 35*ADDR_SZ, "itabs caapacity",0)
-            idc.set_cmt(self.start_addr + 36*ADDR_SZ, "ptab addr",0)
-            idc.set_cmt(self.start_addr + 37*ADDR_SZ, "ptab count",0)
-            idc.set_cmt(self.start_addr + 38*ADDR_SZ, "ptab capacity",0)
-            idc.set_cmt(self.start_addr + 39*ADDR_SZ, "plugin path addr",0)
-            idc.set_cmt(self.start_addr + 40*ADDR_SZ, "plugin path length",0)
-            idc.set_cmt(self.start_addr + 44*ADDR_SZ, "module name addr",0)
-            idc.set_cmt(self.start_addr + 45*ADDR_SZ, "module name length",0)
-            idc.set_cmt(self.start_addr + 49*ADDR_SZ, "hasmain flag",0)
-            idc.set_cmt(self.start_addr + 54*ADDR_SZ+1, "next moduledata addr",0)
+            idc.set_cmt(self.start_addr, "pclntbl addr", 0)
+            idc.set_cmt(self.start_addr + ADDR_SZ, "pclntbl size", 0)
+            idc.set_cmt(self.start_addr + 2 * ADDR_SZ, "pclntbl capacity", 0)
+            idc.set_cmt(self.start_addr + 3 * ADDR_SZ, "funcs table addr", 0)
+            idc.set_cmt(self.start_addr + 4 * ADDR_SZ, "funcs count", 0)
+            idc.set_cmt(self.start_addr + 5 * ADDR_SZ, "funcs table capacity", 0)
+            idc.set_cmt(self.start_addr + 6 * ADDR_SZ, "source files table addr", 0)
+            idc.set_cmt(self.start_addr + 7 * ADDR_SZ, "source files count", 0)
+            idc.set_cmt(self.start_addr + 8 * ADDR_SZ, "source files table capacity", 0)
+            idc.set_cmt(self.start_addr + 9 * ADDR_SZ, "findfunctable addr", 0)
+            idc.set_cmt(self.start_addr + 10 * ADDR_SZ, "min pc", 0)
+            idc.set_cmt(self.start_addr + 11 * ADDR_SZ, "max pc", 0)
+            idc.set_cmt(self.start_addr + 12 * ADDR_SZ, "text start addr", 0)
+            idc.set_cmt(self.start_addr + 13 * ADDR_SZ, "text end addr", 0)
+            idc.set_cmt(self.start_addr + 14 * ADDR_SZ, "noptrdata start addr", 0)
+            idc.set_cmt(self.start_addr + 15 * ADDR_SZ, "noptrdata end addr", 0)
+            idc.set_cmt(self.start_addr + 16 * ADDR_SZ, "data section start addr", 0)
+            idc.set_cmt(self.start_addr + 17 * ADDR_SZ, "data section end addr", 0)
+            idc.set_cmt(self.start_addr + 18 * ADDR_SZ, "bss start addr", 0)
+            idc.set_cmt(self.start_addr + 19 * ADDR_SZ, "bss end addr", 0)
+            idc.set_cmt(self.start_addr + 20 * ADDR_SZ, "noptrbss start addr", 0)
+            idc.set_cmt(self.start_addr + 21 * ADDR_SZ, "noptrbss end addr", 0)
+            idc.set_cmt(self.start_addr + 22 * ADDR_SZ, "end addr of whole image", 0)
+            idc.set_cmt(self.start_addr + 23 * ADDR_SZ, "gcdata addr", 0)
+            idc.set_cmt(self.start_addr + 24 * ADDR_SZ, "gcbss addr", 0)
+            idc.set_cmt(self.start_addr + 25 * ADDR_SZ, "types start addr", 0)
+            idc.set_cmt(self.start_addr + 26 * ADDR_SZ, "types end addr", 0)
+            idc.set_cmt(self.start_addr + 27 * ADDR_SZ, "text section map addr", 0)
+            idc.set_cmt(self.start_addr + 28 * ADDR_SZ, "text section map length", 0)
+            idc.set_cmt(self.start_addr + 29 * ADDR_SZ, "text section map capacity", 0)
+            idc.set_cmt(self.start_addr + 30 * ADDR_SZ, "typelink addr", 0)
+            idc.set_cmt(self.start_addr + 31 * ADDR_SZ, "types count", 0)
+            idc.set_cmt(self.start_addr + 32 * ADDR_SZ, "types table capacity", 0)
+            idc.set_cmt(self.start_addr + 33 * ADDR_SZ, "itabslink addr", 0)
+            idc.set_cmt(self.start_addr + 34 * ADDR_SZ, "itabs count", 0)
+            idc.set_cmt(self.start_addr + 35 * ADDR_SZ, "itabs caapacity", 0)
+            idc.set_cmt(self.start_addr + 36 * ADDR_SZ, "ptab addr", 0)
+            idc.set_cmt(self.start_addr + 37 * ADDR_SZ, "ptab count", 0)
+            idc.set_cmt(self.start_addr + 38 * ADDR_SZ, "ptab capacity", 0)
+            idc.set_cmt(self.start_addr + 39 * ADDR_SZ, "plugin path addr", 0)
+            idc.set_cmt(self.start_addr + 40 * ADDR_SZ, "plugin path length", 0)
+            idc.set_cmt(self.start_addr + 44 * ADDR_SZ, "module name addr", 0)
+            idc.set_cmt(self.start_addr + 45 * ADDR_SZ, "module name length", 0)
+            idc.set_cmt(self.start_addr + 49 * ADDR_SZ, "hasmain flag", 0)
+            idc.set_cmt(self.start_addr + 54 * ADDR_SZ + 1, "next moduledata addr", 0)
 
             idaapi.auto_wait()
 
-            idc.create_strlit(modulename_addr, modulename_addr+modulename_len)
+            idc.create_strlit(modulename_addr, modulename_addr + modulename_len)
             idaapi.auto_wait()
-            idc.create_strlit(pluginpath_addr, pluginpath_addr+pluginpath_len)
+            idc.create_strlit(pluginpath_addr, pluginpath_addr + pluginpath_len)
             idaapi.auto_wait()
-        else: # Go 1.16+
-            self.noptrdata_addr  = read_mem(self.start_addr + 24*ADDR_SZ, read_only=is_test)
-            self.enoptrdata_addr = read_mem(self.start_addr + 25*ADDR_SZ, read_only=is_test)
-            self.data_addr       = read_mem(self.start_addr + 26*ADDR_SZ, read_only=is_test)
-            self.edata_addr      = read_mem(self.start_addr + 27*ADDR_SZ, read_only=is_test)
-            self.bss_addr        = read_mem(self.start_addr + 28*ADDR_SZ, read_only=is_test)
-            self.ebss_addr       = read_mem(self.start_addr + 29*ADDR_SZ, read_only=is_test)
-            self.noptrbss_addr   = read_mem(self.start_addr + 30*ADDR_SZ, read_only=is_test)
-            self.enoptrbss_addr  = read_mem(self.start_addr + 31*ADDR_SZ, read_only=is_test)
-            self.end_addr        = read_mem(self.start_addr + 32*ADDR_SZ, read_only=is_test)
-            self.gcdata_addr     = read_mem(self.start_addr + 33*ADDR_SZ, read_only=is_test)
-            self.gcbss_addr      = read_mem(self.start_addr + 34*ADDR_SZ, read_only=is_test)
-            self.types_addr      = read_mem(self.start_addr + 35*ADDR_SZ, read_only=is_test)
-            self.etypes_addr     = read_mem(self.start_addr + 36*ADDR_SZ, read_only=is_test)
+        else:  # Go 1.16+
+            self.noptrdata_addr = read_mem(self.start_addr + 24 * ADDR_SZ, read_only=is_test)
+            self.enoptrdata_addr = read_mem(self.start_addr + 25 * ADDR_SZ, read_only=is_test)
+            self.data_addr = read_mem(self.start_addr + 26 * ADDR_SZ, read_only=is_test)
+            self.edata_addr = read_mem(self.start_addr + 27 * ADDR_SZ, read_only=is_test)
+            self.bss_addr = read_mem(self.start_addr + 28 * ADDR_SZ, read_only=is_test)
+            self.ebss_addr = read_mem(self.start_addr + 29 * ADDR_SZ, read_only=is_test)
+            self.noptrbss_addr = read_mem(self.start_addr + 30 * ADDR_SZ, read_only=is_test)
+            self.enoptrbss_addr = read_mem(self.start_addr + 31 * ADDR_SZ, read_only=is_test)
 
-            if self.magic_number == common.MAGIC_116: # Go 1.16+
-                self.textsecmap_addr = read_mem(self.start_addr + 37*ADDR_SZ, read_only=is_test)
-                self.textsecmap_len  = read_mem(self.start_addr + 38*ADDR_SZ, read_only=is_test)
-                self.textsecmap_cap  = read_mem(self.start_addr + 39*ADDR_SZ, read_only=is_test)
-                self.typelink_addr   = read_mem(self.start_addr + 40*ADDR_SZ, read_only=is_test)
-                self.type_cnt        = read_mem(self.start_addr + 41*ADDR_SZ, read_only=is_test)
-                self.type_cap        = read_mem(self.start_addr + 42*ADDR_SZ, read_only=is_test)
-                self.itablink_addr   = read_mem(self.start_addr + 43*ADDR_SZ, read_only=is_test)
-                self.itab_cnt        = read_mem(self.start_addr + 44*ADDR_SZ, read_only=is_test)
-                self.itab_cap        = read_mem(self.start_addr + 45*ADDR_SZ, read_only=is_test)
-                self.ptab_addr       = read_mem(self.start_addr + 46*ADDR_SZ, read_only=is_test)
-                self.ptab_sz         = read_mem(self.start_addr + 47*ADDR_SZ, read_only=is_test)
-                self.ptab_cap        = read_mem(self.start_addr + 48*ADDR_SZ, read_only=is_test)
+            if self.magic_number == common.MAGIC_116:  # Go 1.16+
+                self.end_addr = read_mem(self.start_addr + 32 * ADDR_SZ, read_only=is_test)
+                self.gcdata_addr = read_mem(self.start_addr + 33 * ADDR_SZ, read_only=is_test)
+                self.gcbss_addr = read_mem(self.start_addr + 34 * ADDR_SZ, read_only=is_test)
+                self.types_addr = read_mem(self.start_addr + 35 * ADDR_SZ, read_only=is_test)
+                self.etypes_addr = read_mem(self.start_addr + 36 * ADDR_SZ, read_only=is_test)
+                self.textsecmap_addr = read_mem(self.start_addr + 37 * ADDR_SZ, read_only=is_test)
+                self.textsecmap_len = read_mem(self.start_addr + 38 * ADDR_SZ, read_only=is_test)
+                self.textsecmap_cap = read_mem(self.start_addr + 39 * ADDR_SZ, read_only=is_test)
+                self.typelink_addr = read_mem(self.start_addr + 40 * ADDR_SZ, read_only=is_test)
+                self.type_cnt = read_mem(self.start_addr + 41 * ADDR_SZ, read_only=is_test)
+                self.type_cap = read_mem(self.start_addr + 42 * ADDR_SZ, read_only=is_test)
+                self.itablink_addr = read_mem(self.start_addr + 43 * ADDR_SZ, read_only=is_test)
+                self.itab_cnt = read_mem(self.start_addr + 44 * ADDR_SZ, read_only=is_test)
+                self.itab_cap = read_mem(self.start_addr + 45 * ADDR_SZ, read_only=is_test)
+                self.ptab_addr = read_mem(self.start_addr + 46 * ADDR_SZ, read_only=is_test)
+                self.ptab_sz = read_mem(self.start_addr + 47 * ADDR_SZ, read_only=is_test)
+                self.ptab_cap = read_mem(self.start_addr + 48 * ADDR_SZ, read_only=is_test)
 
-                pluginpath_addr = read_mem(self.start_addr+49*ADDR_SZ, read_only=is_test)
-                pluginpath_len  = read_mem(self.start_addr+50*ADDR_SZ, read_only=is_test)
-                self.pluginpath = "" if (pluginpath_len==0x0 or pluginpath_addr ==0x0) else idc.get_bytes(pluginpath_addr, pluginpath_len).decode()
+                pluginpath_addr = read_mem(self.start_addr + 49 * ADDR_SZ, read_only=is_test)
+                pluginpath_len = read_mem(self.start_addr + 50 * ADDR_SZ, read_only=is_test)
+                self.pluginpath = "" if (pluginpath_len == 0x0 or pluginpath_addr == 0x0) else idc.get_bytes(
+                    pluginpath_addr, pluginpath_len).decode()
 
-                modulename_addr = read_mem(self.start_addr+54*ADDR_SZ, read_only=is_test)
-                modulename_len  = read_mem(self.start_addr+55*ADDR_SZ, read_only=is_test)
-                self.modulename = "" if modulename_addr ==0x0 or modulename_len ==0 else idc.get_bytes(modulename_addr, modulename_len).decode()
+                modulename_addr = read_mem(self.start_addr + 54 * ADDR_SZ, read_only=is_test)
+                modulename_len = read_mem(self.start_addr + 55 * ADDR_SZ, read_only=is_test)
+                self.modulename = "" if modulename_addr == 0x0 or modulename_len == 0 else idc.get_bytes(
+                    modulename_addr, modulename_len).decode()
 
-                self.hasmain = idc.get_wide_byte(self.start_addr+59*ADDR_SZ)
-                self.next    = read_mem(self.start_addr+64*ADDR_SZ+1, read_only=is_test)
-            else: # Go 1.18+
-                self.rodata_addr = read_mem(self.start_addr + 37*ADDR_SZ, read_only=is_test)
-                self.gofunc_addr = read_mem(self.start_addr + 38*ADDR_SZ, read_only=is_test)
+                self.hasmain = idc.get_wide_byte(self.start_addr + 59 * ADDR_SZ)
+                self.next = read_mem(self.start_addr + 64 * ADDR_SZ + 1, read_only=is_test)
+            elif self.magic_number == common.MAGIC_118:  # Go 1.18+
+                self.end_addr = read_mem(self.start_addr + 32 * ADDR_SZ, read_only=is_test)
+                self.gcdata_addr = read_mem(self.start_addr + 33 * ADDR_SZ, read_only=is_test)
+                self.gcbss_addr = read_mem(self.start_addr + 34 * ADDR_SZ, read_only=is_test)
+                self.types_addr = read_mem(self.start_addr + 35 * ADDR_SZ, read_only=is_test)
+                self.etypes_addr = read_mem(self.start_addr + 36 * ADDR_SZ, read_only=is_test)
+                self.rodata_addr = read_mem(self.start_addr + 37 * ADDR_SZ, read_only=is_test)
+                self.gofunc_addr = read_mem(self.start_addr + 38 * ADDR_SZ, read_only=is_test)
+                self.textsecmap_addr = read_mem(self.start_addr + 39 * ADDR_SZ, read_only=is_test)
+                self.textsecmap_len = read_mem(self.start_addr + 40 * ADDR_SZ, read_only=is_test)
+                self.textsecmap_cap = read_mem(self.start_addr + 41 * ADDR_SZ, read_only=is_test)
+                self.typelink_addr = read_mem(self.start_addr + 42 * ADDR_SZ, read_only=is_test)
+                self.type_cnt = read_mem(self.start_addr + 43 * ADDR_SZ, read_only=is_test)
+                self.type_cap = read_mem(self.start_addr + 44 * ADDR_SZ, read_only=is_test)
+                self.itablink_addr = read_mem(self.start_addr + 45 * ADDR_SZ, read_only=is_test)
+                self.itab_cnt = read_mem(self.start_addr + 46 * ADDR_SZ, read_only=is_test)
+                self.itab_cap = read_mem(self.start_addr + 47 * ADDR_SZ, read_only=is_test)
+                self.ptab_addr = read_mem(self.start_addr + 48 * ADDR_SZ, read_only=is_test)
+                self.ptab_sz = read_mem(self.start_addr + 49 * ADDR_SZ, read_only=is_test)
+                self.ptab_cap = read_mem(self.start_addr + 50 * ADDR_SZ, read_only=is_test)
 
-                self.textsecmap_addr = read_mem(self.start_addr + 39*ADDR_SZ, read_only=is_test)
-                self.textsecmap_len  = read_mem(self.start_addr + 40*ADDR_SZ, read_only=is_test)
-                self.textsecmap_cap  = read_mem(self.start_addr + 41*ADDR_SZ, read_only=is_test)
-                self.typelink_addr   = read_mem(self.start_addr + 42*ADDR_SZ, read_only=is_test)
-                self.type_cnt        = read_mem(self.start_addr + 43*ADDR_SZ, read_only=is_test)
-                self.type_cap        = read_mem(self.start_addr + 44*ADDR_SZ, read_only=is_test)
-                self.itablink_addr   = read_mem(self.start_addr + 45*ADDR_SZ, read_only=is_test)
-                self.itab_cnt        = read_mem(self.start_addr + 46*ADDR_SZ, read_only=is_test)
-                self.itab_cap        = read_mem(self.start_addr + 47*ADDR_SZ, read_only=is_test)
-                self.ptab_addr       = read_mem(self.start_addr + 48*ADDR_SZ, read_only=is_test)
-                self.ptab_sz         = read_mem(self.start_addr + 49*ADDR_SZ, read_only=is_test)
-                self.ptab_cap        = read_mem(self.start_addr + 50*ADDR_SZ, read_only=is_test)
+                pluginpath_addr = read_mem(self.start_addr + 51 * ADDR_SZ, read_only=is_test)
+                pluginpath_len = read_mem(self.start_addr + 52 * ADDR_SZ, read_only=is_test)
+                self.pluginpath = "" if (pluginpath_len == 0x0 or pluginpath_addr == 0x0) else idc.get_bytes(
+                    pluginpath_addr, pluginpath_len).decode()
 
-                pluginpath_addr = read_mem(self.start_addr + 51*ADDR_SZ, read_only=is_test)
-                pluginpath_len  = read_mem(self.start_addr + 52*ADDR_SZ, read_only=is_test)
-                self.pluginpath = "" if (pluginpath_len == 0x0 or pluginpath_addr == 0x0) else idc.get_bytes(pluginpath_addr, pluginpath_len).decode()
+                modulename_addr = read_mem(self.start_addr + 56 * ADDR_SZ, read_only=is_test)
+                modulename_len = read_mem(self.start_addr + 57 * ADDR_SZ, read_only=is_test)
+                self.modulename = "" if modulename_addr == 0x0 or modulename_len == 0x0 else idc.get_bytes(
+                    modulename_addr, modulename_len).decode()
 
-                modulename_addr = read_mem(self.start_addr + 56*ADDR_SZ, read_only=is_test)
-                modulename_len  = read_mem(self.start_addr + 57*ADDR_SZ, read_only=is_test)
-                self.modulename ="" if modulename_addr == 0x0 or modulename_len == 0x0 else idc.get_bytes(modulename_addr, modulename_len).decode()
+                self.hasmain = idc.get_wide_byte(self.start_addr + 61 * ADDR_SZ)
+                self.next = read_mem(self.start_addr + 66 * ADDR_SZ + 1, read_only=is_test)
+            else:  # 1.20+
+                self.covctrs = read_mem(self.start_addr + 32 * ADDR_SZ, read_only=is_test)
+                self.ecovstrs = read_mem(self.start_addr + 33 * ADDR_SZ, read_only=is_test)
+                self.end_addr = read_mem(self.start_addr + 34 * ADDR_SZ, read_only=is_test)
+                self.gcdata_addr = read_mem(self.start_addr + 35 * ADDR_SZ, read_only=is_test)
+                self.gcbss_addr = read_mem(self.start_addr + 36 * ADDR_SZ, read_only=is_test)
+                self.types_addr = read_mem(self.start_addr + 37 * ADDR_SZ, read_only=is_test)
+                self.etypes_addr = read_mem(self.start_addr + 38 * ADDR_SZ, read_only=is_test)
+                self.rodata_addr = read_mem(self.start_addr + 39 * ADDR_SZ, read_only=is_test)
+                self.gofunc_addr = read_mem(self.start_addr + 40 * ADDR_SZ, read_only=is_test)
+                self.textsecmap_addr = read_mem(self.start_addr + 41 * ADDR_SZ, read_only=is_test)
+                self.textsecmap_len = read_mem(self.start_addr + 42 * ADDR_SZ, read_only=is_test)
+                self.textsecmap_cap = read_mem(self.start_addr + 43 * ADDR_SZ, read_only=is_test)
+                self.typelink_addr = read_mem(self.start_addr + 44 * ADDR_SZ, read_only=is_test)
+                self.type_cnt = read_mem(self.start_addr + 45 * ADDR_SZ, read_only=is_test)
+                self.type_cap = read_mem(self.start_addr + 46 * ADDR_SZ, read_only=is_test)
+                self.itablink_addr = read_mem(self.start_addr + 47 * ADDR_SZ, read_only=is_test)
+                self.itab_cnt = read_mem(self.start_addr + 48 * ADDR_SZ, read_only=is_test)
+                self.itab_cap = read_mem(self.start_addr + 49 * ADDR_SZ, read_only=is_test)
+                self.ptab_addr = read_mem(self.start_addr + 50 * ADDR_SZ, read_only=is_test)
+                self.ptab_sz = read_mem(self.start_addr + 51 * ADDR_SZ, read_only=is_test)
+                self.ptab_cap = read_mem(self.start_addr + 52 * ADDR_SZ, read_only=is_test)
 
-                self.hasmain = idc.get_wide_byte(self.start_addr + 61*ADDR_SZ)
-                self.next    = read_mem(self.start_addr + 66*ADDR_SZ+1, read_only=is_test)
+                pluginpath_addr = read_mem(self.start_addr + 53 * ADDR_SZ, read_only=is_test)
+                pluginpath_len = read_mem(self.start_addr + 54 * ADDR_SZ, read_only=is_test)
+                self.pluginpath = "" if (pluginpath_len == 0x0 or pluginpath_addr == 0x0) else idc.get_bytes(
+                    pluginpath_addr, pluginpath_len).decode()
 
+                modulename_addr = read_mem(self.start_addr + 58 * ADDR_SZ, read_only=is_test)
+                modulename_len = read_mem(self.start_addr + 59 * ADDR_SZ, read_only=is_test)
+                self.modulename = "" if modulename_addr == 0x0 or modulename_len == 0x0 else idc.get_bytes(
+                    modulename_addr, modulename_len).decode()
+
+                self.hasmain = idc.get_wide_byte(self.start_addr + 63 * ADDR_SZ)
+                self.next = read_mem(self.start_addr + 67 * ADDR_SZ + 1, read_only=is_test)
+            # common._info("here")
             # Set comment for each field
             idc.set_cmt(self.start_addr, "pcHeader", 0)
             idc.set_cmt(self.start_addr + ADDR_SZ, "funcnametab addr", 0)
-            idc.set_cmt(self.start_addr + 2*ADDR_SZ, "funcnametab size", 0)
-            idc.set_cmt(self.start_addr + 3*ADDR_SZ, "funcnametab capacity", 0)
-            idc.set_cmt(self.start_addr + 4*ADDR_SZ, "cutab addr", 0)
-            idc.set_cmt(self.start_addr + 5*ADDR_SZ, "cutab count", 0)
-            idc.set_cmt(self.start_addr + 6*ADDR_SZ, "cutab capacity", 0)
-            idc.set_cmt(self.start_addr + 7*ADDR_SZ, "source files table addr",0)
-            idc.set_cmt(self.start_addr + 8*ADDR_SZ, "source files count",0)
-            idc.set_cmt(self.start_addr + 9*ADDR_SZ, "source files table capacity",0)
-            idc.set_cmt(self.start_addr + 10*ADDR_SZ, "pc table addr", 0)
-            idc.set_cmt(self.start_addr + 11*ADDR_SZ, "pc table size", 0)
-            idc.set_cmt(self.start_addr + 12*ADDR_SZ, "pc table capacity", 0)
-            idc.set_cmt(self.start_addr + 13*ADDR_SZ, "pclntbl addr",0)
-            idc.set_cmt(self.start_addr + 14*ADDR_SZ, "pclntbl size",0)
-            idc.set_cmt(self.start_addr + 15*ADDR_SZ, "pclntbl capacity",0)
-            idc.set_cmt(self.start_addr + 16*ADDR_SZ, "funcs table addr",0)
-            idc.set_cmt(self.start_addr + 17*ADDR_SZ, "funcs count",0)
-            idc.set_cmt(self.start_addr + 18*ADDR_SZ, "funcs table capacity",0)
-            idc.set_cmt(self.start_addr + 19*ADDR_SZ, "findfunctable addr",0)
-            idc.set_cmt(self.start_addr + 20*ADDR_SZ, "min pc",0)
-            idc.set_cmt(self.start_addr + 21*ADDR_SZ, "max pc",0)
-            idc.set_cmt(self.start_addr + 22*ADDR_SZ, "text start addr",0)
-            idc.set_cmt(self.start_addr + 23*ADDR_SZ, "text end addr",0)
-            idc.set_cmt(self.start_addr + 24*ADDR_SZ, "noptrdata start addr",0)
-            idc.set_cmt(self.start_addr + 25*ADDR_SZ, "noptrdata end addr",0)
-            idc.set_cmt(self.start_addr + 26*ADDR_SZ, "data section start addr",0)
-            idc.set_cmt(self.start_addr + 27*ADDR_SZ, "data section end addr",0)
-            idc.set_cmt(self.start_addr + 28*ADDR_SZ, "bss start addr",0)
-            idc.set_cmt(self.start_addr + 29*ADDR_SZ, "bss end addr",0)
-            idc.set_cmt(self.start_addr + 30*ADDR_SZ, "noptrbss start addr",0)
-            idc.set_cmt(self.start_addr + 31*ADDR_SZ, "noptrbss end addr",0)
-            idc.set_cmt(self.start_addr + 32*ADDR_SZ, "end addr of whole image",0)
-            idc.set_cmt(self.start_addr + 33*ADDR_SZ, "gcdata addr",0)
-            idc.set_cmt(self.start_addr + 34*ADDR_SZ, "gcbss addr",0)
-            idc.set_cmt(self.start_addr + 35*ADDR_SZ, "types start addr",0)
-            idc.set_cmt(self.start_addr + 36*ADDR_SZ, "types end addr",0)
-            if self.magic_number == common.MAGIC_116: # Go 1.16+
-                idc.set_cmt(self.start_addr + 37*ADDR_SZ, "text section map addr",0)
-                idc.set_cmt(self.start_addr + 38*ADDR_SZ, "text section map length",0)
-                idc.set_cmt(self.start_addr + 39*ADDR_SZ, "text section map capacity",0)
-                idc.set_cmt(self.start_addr + 40*ADDR_SZ, "typelink addr",0)
-                idc.set_cmt(self.start_addr + 41*ADDR_SZ, "types count",0)
-                idc.set_cmt(self.start_addr + 42*ADDR_SZ, "types table capacity",0)
-                idc.set_cmt(self.start_addr + 43*ADDR_SZ, "itabslink addr",0)
-                idc.set_cmt(self.start_addr + 44*ADDR_SZ, "itabs count",0)
-                idc.set_cmt(self.start_addr + 45*ADDR_SZ, "itabs caapacity",0)
-                idc.set_cmt(self.start_addr + 46*ADDR_SZ, "ptab addr",0)
-                idc.set_cmt(self.start_addr + 47*ADDR_SZ, "ptab count",0)
-                idc.set_cmt(self.start_addr + 48*ADDR_SZ, "ptab capacity",0)
-                idc.set_cmt(self.start_addr + 49*ADDR_SZ, "plugin path addr",0)
-                idc.set_cmt(self.start_addr + 50*ADDR_SZ, "plugin path length",0)
-                idc.set_cmt(self.start_addr + 54*ADDR_SZ, "module name addr",0)
-                idc.set_cmt(self.start_addr + 55*ADDR_SZ, "module name length",0)
-                idc.set_cmt(self.start_addr + 59*ADDR_SZ, "hasmain flag",0)
-                idc.set_cmt(self.start_addr + 64*ADDR_SZ+1, "next moduledata addr",0)
-            else:
-                idc.set_cmt(self.start_addr + 37*ADDR_SZ, "rodata addr",0)
-                idc.set_cmt(self.start_addr + 38*ADDR_SZ, "go func pointer addr",0)
-                idc.set_cmt(self.start_addr + 39*ADDR_SZ, "text section map addr",0)
-                idc.set_cmt(self.start_addr + 40*ADDR_SZ, "text section map length",0)
-                idc.set_cmt(self.start_addr + 41*ADDR_SZ, "text section map capacity",0)
-                idc.set_cmt(self.start_addr + 42*ADDR_SZ, "typelink addr",0)
-                idc.set_cmt(self.start_addr + 43*ADDR_SZ, "types count",0)
-                idc.set_cmt(self.start_addr + 44*ADDR_SZ, "types table capacity",0)
-                idc.set_cmt(self.start_addr + 45*ADDR_SZ, "itabslink addr",0)
-                idc.set_cmt(self.start_addr + 46*ADDR_SZ, "itabs count",0)
-                idc.set_cmt(self.start_addr + 47*ADDR_SZ, "itabs caapacity",0)
-                idc.set_cmt(self.start_addr + 48*ADDR_SZ, "ptab addr",0)
-                idc.set_cmt(self.start_addr + 49*ADDR_SZ, "ptab count",0)
-                idc.set_cmt(self.start_addr + 50*ADDR_SZ, "ptab capacity",0)
-                idc.set_cmt(self.start_addr + 51*ADDR_SZ, "plugin path addr",0)
-                idc.set_cmt(self.start_addr + 52*ADDR_SZ, "plugin path length",0)
-                idc.set_cmt(self.start_addr + 56*ADDR_SZ, "module name addr",0)
-                idc.set_cmt(self.start_addr + 57*ADDR_SZ, "module name length",0)
-                idc.set_cmt(self.start_addr + 61*ADDR_SZ, "hasmain flag",0)
-                idc.set_cmt(self.start_addr + 66*ADDR_SZ+1, "next moduledata addr",0)
+            idc.set_cmt(self.start_addr + 2 * ADDR_SZ, "funcnametab size", 0)
+            idc.set_cmt(self.start_addr + 3 * ADDR_SZ, "funcnametab capacity", 0)
+            idc.set_cmt(self.start_addr + 4 * ADDR_SZ, "cutab addr", 0)
+            idc.set_cmt(self.start_addr + 5 * ADDR_SZ, "cutab count", 0)
+            idc.set_cmt(self.start_addr + 6 * ADDR_SZ, "cutab capacity", 0)
+            idc.set_cmt(self.start_addr + 7 * ADDR_SZ, "source files table addr", 0)
+            idc.set_cmt(self.start_addr + 8 * ADDR_SZ, "source files count", 0)
+            idc.set_cmt(self.start_addr + 9 * ADDR_SZ, "source files table capacity", 0)
+            idc.set_cmt(self.start_addr + 10 * ADDR_SZ, "pc table addr", 0)
+            idc.set_cmt(self.start_addr + 11 * ADDR_SZ, "pc table size", 0)
+            idc.set_cmt(self.start_addr + 12 * ADDR_SZ, "pc table capacity", 0)
+            idc.set_cmt(self.start_addr + 13 * ADDR_SZ, "pclntbl addr", 0)
+            idc.set_cmt(self.start_addr + 14 * ADDR_SZ, "pclntbl size", 0)
+            idc.set_cmt(self.start_addr + 15 * ADDR_SZ, "pclntbl capacity", 0)
+            idc.set_cmt(self.start_addr + 16 * ADDR_SZ, "funcs table addr", 0)
+            idc.set_cmt(self.start_addr + 17 * ADDR_SZ, "funcs count", 0)
+            idc.set_cmt(self.start_addr + 18 * ADDR_SZ, "funcs table capacity", 0)
+            idc.set_cmt(self.start_addr + 19 * ADDR_SZ, "findfunctable addr", 0)
+            idc.set_cmt(self.start_addr + 20 * ADDR_SZ, "min pc", 0)
+            idc.set_cmt(self.start_addr + 21 * ADDR_SZ, "max pc", 0)
+            idc.set_cmt(self.start_addr + 22 * ADDR_SZ, "text start addr", 0)
+            idc.set_cmt(self.start_addr + 23 * ADDR_SZ, "text end addr", 0)
+            idc.set_cmt(self.start_addr + 24 * ADDR_SZ, "noptrdata start addr", 0)
+            idc.set_cmt(self.start_addr + 25 * ADDR_SZ, "noptrdata end addr", 0)
+            idc.set_cmt(self.start_addr + 26 * ADDR_SZ, "data section start addr", 0)
+            idc.set_cmt(self.start_addr + 27 * ADDR_SZ, "data section end addr", 0)
+            idc.set_cmt(self.start_addr + 28 * ADDR_SZ, "bss start addr", 0)
+            idc.set_cmt(self.start_addr + 29 * ADDR_SZ, "bss end addr", 0)
+            idc.set_cmt(self.start_addr + 30 * ADDR_SZ, "noptrbss start addr", 0)
+            idc.set_cmt(self.start_addr + 31 * ADDR_SZ, "noptrbss end addr", 0)
 
+            if self.magic_number == common.MAGIC_116:  # Go 1.16+
+                idc.set_cmt(self.start_addr + 32 * ADDR_SZ, "end addr of whole image", 0)
+                idc.set_cmt(self.start_addr + 33 * ADDR_SZ, "gcdata addr", 0)
+                idc.set_cmt(self.start_addr + 34 * ADDR_SZ, "gcbss addr", 0)
+                idc.set_cmt(self.start_addr + 35 * ADDR_SZ, "types start addr", 0)
+                idc.set_cmt(self.start_addr + 36 * ADDR_SZ, "types end addr", 0)
+                idc.set_cmt(self.start_addr + 37 * ADDR_SZ, "text section map addr", 0)
+                idc.set_cmt(self.start_addr + 38 * ADDR_SZ, "text section map length", 0)
+                idc.set_cmt(self.start_addr + 39 * ADDR_SZ, "text section map capacity", 0)
+                idc.set_cmt(self.start_addr + 40 * ADDR_SZ, "typelink addr", 0)
+                idc.set_cmt(self.start_addr + 41 * ADDR_SZ, "types count", 0)
+                idc.set_cmt(self.start_addr + 42 * ADDR_SZ, "types table capacity", 0)
+                idc.set_cmt(self.start_addr + 43 * ADDR_SZ, "itabslink addr", 0)
+                idc.set_cmt(self.start_addr + 44 * ADDR_SZ, "itabs count", 0)
+                idc.set_cmt(self.start_addr + 45 * ADDR_SZ, "itabs caapacity", 0)
+                idc.set_cmt(self.start_addr + 46 * ADDR_SZ, "ptab addr", 0)
+                idc.set_cmt(self.start_addr + 47 * ADDR_SZ, "ptab count", 0)
+                idc.set_cmt(self.start_addr + 48 * ADDR_SZ, "ptab capacity", 0)
+                idc.set_cmt(self.start_addr + 49 * ADDR_SZ, "plugin path addr", 0)
+                idc.set_cmt(self.start_addr + 50 * ADDR_SZ, "plugin path length", 0)
+                idc.set_cmt(self.start_addr + 54 * ADDR_SZ, "module name addr", 0)
+                idc.set_cmt(self.start_addr + 55 * ADDR_SZ, "module name length", 0)
+                idc.set_cmt(self.start_addr + 59 * ADDR_SZ, "hasmain flag", 0)
+                idc.set_cmt(self.start_addr + 64 * ADDR_SZ + 1, "next moduledata addr", 0)
+            elif self.magic_number == common.MAGIC_118:
+                idc.set_cmt(self.start_addr + 32 * ADDR_SZ, "end addr of whole image", 0)
+                idc.set_cmt(self.start_addr + 33 * ADDR_SZ, "gcdata addr", 0)
+                idc.set_cmt(self.start_addr + 34 * ADDR_SZ, "gcbss addr", 0)
+                idc.set_cmt(self.start_addr + 35 * ADDR_SZ, "types start addr", 0)
+                idc.set_cmt(self.start_addr + 36 * ADDR_SZ, "types end addr", 0)
+                idc.set_cmt(self.start_addr + 37 * ADDR_SZ, "rodata addr", 0)
+                idc.set_cmt(self.start_addr + 38 * ADDR_SZ, "go func pointer addr", 0)
+                idc.set_cmt(self.start_addr + 39 * ADDR_SZ, "text section map addr", 0)
+                idc.set_cmt(self.start_addr + 40 * ADDR_SZ, "text section map length", 0)
+                idc.set_cmt(self.start_addr + 41 * ADDR_SZ, "text section map capacity", 0)
+                idc.set_cmt(self.start_addr + 42 * ADDR_SZ, "typelink addr", 0)
+                idc.set_cmt(self.start_addr + 43 * ADDR_SZ, "types count", 0)
+                idc.set_cmt(self.start_addr + 44 * ADDR_SZ, "types table capacity", 0)
+                idc.set_cmt(self.start_addr + 45 * ADDR_SZ, "itabslink addr", 0)
+                idc.set_cmt(self.start_addr + 46 * ADDR_SZ, "itabs count", 0)
+                idc.set_cmt(self.start_addr + 47 * ADDR_SZ, "itabs caapacity", 0)
+                idc.set_cmt(self.start_addr + 48 * ADDR_SZ, "ptab addr", 0)
+                idc.set_cmt(self.start_addr + 49 * ADDR_SZ, "ptab count", 0)
+                idc.set_cmt(self.start_addr + 50 * ADDR_SZ, "ptab capacity", 0)
+                idc.set_cmt(self.start_addr + 51 * ADDR_SZ, "plugin path addr", 0)
+                idc.set_cmt(self.start_addr + 52 * ADDR_SZ, "plugin path length", 0)
+                idc.set_cmt(self.start_addr + 56 * ADDR_SZ, "module name addr", 0)
+                idc.set_cmt(self.start_addr + 57 * ADDR_SZ, "module name length", 0)
+                idc.set_cmt(self.start_addr + 61 * ADDR_SZ, "hasmain flag", 0)
+                idc.set_cmt(self.start_addr + 66 * ADDR_SZ + 1, "next moduledata addr", 0)
+            else:  # 1.20+
+                idc.set_cmt(self.start_addr + 32 * ADDR_SZ, "covctrs addr", 0)
+                idc.set_cmt(self.start_addr + 33 * ADDR_SZ, "end covctrs addr", 0)
+                idc.set_cmt(self.start_addr + 34 * ADDR_SZ, "end addr of whole image", 0)
+                idc.set_cmt(self.start_addr + 35 * ADDR_SZ, "gcdata addr", 0)
+                idc.set_cmt(self.start_addr + 36 * ADDR_SZ, "gcbss addr", 0)
+                idc.set_cmt(self.start_addr + 37 * ADDR_SZ, "types start addr", 0)
+                idc.set_cmt(self.start_addr + 38 * ADDR_SZ, "types end addr", 0)
+                idc.set_cmt(self.start_addr + 39 * ADDR_SZ, "rodata addr", 0)
+                idc.set_cmt(self.start_addr + 40 * ADDR_SZ, "go func pointer addr", 0)
+                idc.set_cmt(self.start_addr + 41 * ADDR_SZ, "text section map addr", 0)
+                idc.set_cmt(self.start_addr + 42 * ADDR_SZ, "text section map length", 0)
+                idc.set_cmt(self.start_addr + 43 * ADDR_SZ, "text section map capacity", 0)
+                idc.set_cmt(self.start_addr + 44 * ADDR_SZ, "typelink addr", 0)
+                idc.set_cmt(self.start_addr + 45 * ADDR_SZ, "types count", 0)
+                idc.set_cmt(self.start_addr + 46 * ADDR_SZ, "types table capacity", 0)
+                idc.set_cmt(self.start_addr + 47 * ADDR_SZ, "itabslink addr", 0)
+                idc.set_cmt(self.start_addr + 48 * ADDR_SZ, "itabs count", 0)
+                idc.set_cmt(self.start_addr + 49 * ADDR_SZ, "itabs caapacity", 0)
+                idc.set_cmt(self.start_addr + 50 * ADDR_SZ, "ptab addr", 0)
+                idc.set_cmt(self.start_addr + 51 * ADDR_SZ, "ptab count", 0)
+                idc.set_cmt(self.start_addr + 52 * ADDR_SZ, "ptab capacity", 0)
+                idc.set_cmt(self.start_addr + 53 * ADDR_SZ, "plugin path addr", 0)
+                idc.set_cmt(self.start_addr + 54 * ADDR_SZ, "plugin path length", 0)
+                idc.set_cmt(self.start_addr + 58 * ADDR_SZ, "module name addr", 0)
+                idc.set_cmt(self.start_addr + 59 * ADDR_SZ, "module name length", 0)
+                idc.set_cmt(self.start_addr + 63 * ADDR_SZ, "hasmain flag", 0)
+                idc.set_cmt(self.start_addr + 67 * ADDR_SZ + 1, "next moduledata addr", 0)
             idaapi.auto_wait()
 
-            idc.create_strlit(modulename_addr, modulename_addr+modulename_len)
+            idc.create_strlit(modulename_addr, modulename_addr + modulename_len)
             idaapi.auto_wait()
-            idc.create_strlit(pluginpath_addr, pluginpath_addr+pluginpath_len)
+            idc.create_strlit(pluginpath_addr, pluginpath_addr + pluginpath_len)
             idaapi.auto_wait()

@@ -1,21 +1,48 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 import idc, idaapi, idautils
+
 idaapi.require("moduledata")
 idaapi.require("common")
 from common import read_mem, ADDR_SZ
 import sys
+
 sys.setrecursionlimit(10000)
 
-STANDARD_PACKAGES = ['archive/tar', 'archive/zip', 'bufio', 'builtin', 'bytes', 'compress/bzip2', 'compress/flate', 'compress/gzip', 'compress/lzw', 'compress/zlib', 'container/heap', 'container/list', 'container/ring', 'context', 'crypto', 'crypto/aes', 'crypto/cipher', 'crypto/des', 'crypto/dsa', 'crypto/ecdsa', 'crypto/ed25519', 'crypto/elliptic', 'crypto/hmac', 'crypto/md5', 'crypto/rand', 'crypto/rc4', 'crypto/rsa', 'crypto/sha1', 'crypto/sha256', 'crypto/sha512', 'crypto/subtle', 'crypto/tls', 'crypto/x509', 'crypto/x509/pkix', 'database/sql', 'database/sql/driver', 'debug/dwarf', 'debug/elf', 'debug/gosym', 'debug/macho', 'debug/pe', 'debug/plan9obj', 'encoding', 'encoding/ascii85', 'encoding/asn1', 'encoding/base32', 'encoding/base64', 'encoding/binary', 'encoding/csv', 'encoding/gob', 'encoding/hex', 'encoding/json', 'encoding/pem', 'encoding/xml', 'errors', 'expvar', 'flag', 'fmt', 'go/ast', 'go/build', 'go/constant', 'go/doc', 'go/format', 'go/importer', 'go/parser', 'go/printer', 'go/scanner', 'go/token', 'go/types', 'hash', 'hash/adler32', 'hash/crc32', 'hash/crc64', 'hash/fnv', 'html', 'html/template', 'image', 'image/color', 'image/color/palette', 'image/draw', 'image/gif', 'image/jpeg', 'image/png', 'index/suffixarray', 'io', 'io/ioutil', 'log', 'log/syslog', 'math', 'math/big', 'math/bits', 'math/cmplx', 'math/rand', 'mime', 'mime/multipart', 'mime/quotedprintable', 'net', 'net/http', 'net/http/cgi', 'net/http/cookiejar', 'net/http/fcgi', 'net/http/httptest', 'net/http/httptrace', 'net/http/httputil', 'net/http/pprof', 'net/mail', 'net/rpc', 'net/rpc/jsonrpc', 'net/smtp', 'net/textproto', 'net/url', 'os', 'os/exec', 'os/signal', 'os/user', 'path', 'path/filepath', 'plugin', 'reflect', 'regexp', 'regexp/syntax', 'runtime', 'runtime/cgo', 'runtime/debug', 'runtime/pprof', 'runtime/race', 'runtime/trace', 'sort', 'strconv', 'strings', 'sync', 'sync/atomic', 'syscall', 'syscall/js', 'testing', 'testing/iotest', 'testing/quick', 'text/scanner', 'text/tabwriter', 'text/template', 'text/template/parse', 'time', 'unicode', 'unicode/utf16', 'unicode/utf8', 'unsafe']
-#import IPython
+STANDARD_PACKAGES = ['archive/tar', 'archive/zip', 'bufio', 'builtin', 'bytes', 'compress/bzip2', 'compress/flate',
+                     'compress/gzip', 'compress/lzw', 'compress/zlib', 'container/heap', 'container/list',
+                     'container/ring', 'context', 'crypto', 'crypto/aes', 'crypto/cipher', 'crypto/des', 'crypto/dsa',
+                     'crypto/ecdsa', 'crypto/ed25519', 'crypto/elliptic', 'crypto/hmac', 'crypto/md5', 'crypto/rand',
+                     'crypto/rc4', 'crypto/rsa', 'crypto/sha1', 'crypto/sha256', 'crypto/sha512', 'crypto/subtle',
+                     'crypto/tls', 'crypto/x509', 'crypto/x509/pkix', 'database/sql', 'database/sql/driver',
+                     'debug/dwarf', 'debug/elf', 'debug/gosym', 'debug/macho', 'debug/pe', 'debug/plan9obj', 'encoding',
+                     'encoding/ascii85', 'encoding/asn1', 'encoding/base32', 'encoding/base64', 'encoding/binary',
+                     'encoding/csv', 'encoding/gob', 'encoding/hex', 'encoding/json', 'encoding/pem', 'encoding/xml',
+                     'errors', 'expvar', 'flag', 'fmt', 'go/ast', 'go/build', 'go/constant', 'go/doc', 'go/format',
+                     'go/importer', 'go/parser', 'go/printer', 'go/scanner', 'go/token', 'go/types', 'hash',
+                     'hash/adler32', 'hash/crc32', 'hash/crc64', 'hash/fnv', 'html', 'html/template', 'image',
+                     'image/color', 'image/color/palette', 'image/draw', 'image/gif', 'image/jpeg', 'image/png',
+                     'index/suffixarray', 'io', 'io/ioutil', 'log', 'log/syslog', 'math', 'math/big', 'math/bits',
+                     'math/cmplx', 'math/rand', 'mime', 'mime/multipart', 'mime/quotedprintable', 'net', 'net/http',
+                     'net/http/cgi', 'net/http/cookiejar', 'net/http/fcgi', 'net/http/httptest', 'net/http/httptrace',
+                     'net/http/httputil', 'net/http/pprof', 'net/mail', 'net/rpc', 'net/rpc/jsonrpc', 'net/smtp',
+                     'net/textproto', 'net/url', 'os', 'os/exec', 'os/signal', 'os/user', 'path', 'path/filepath',
+                     'plugin', 'reflect', 'regexp', 'regexp/syntax', 'runtime', 'runtime/cgo', 'runtime/debug',
+                     'runtime/pprof', 'runtime/race', 'runtime/trace', 'sort', 'strconv', 'strings', 'sync',
+                     'sync/atomic', 'syscall', 'syscall/js', 'testing', 'testing/iotest', 'testing/quick',
+                     'text/scanner', 'text/tabwriter', 'text/template', 'text/template/parse', 'time', 'unicode',
+                     'unicode/utf16', 'unicode/utf8', 'unsafe']
+
+
+# import IPython
 
 class TypesParser():
     '''
     Parse and construct all the types
     '''
 
-    RAW_TYPES = ['Bool','Int','Int8','Int16','Int32','Int64','Uint','Uint8','Uint16','Uint32','Uint64','Uintptr','Float32','Float64','Complex64','Complex128', 'UnsafePointer', 'String']
+    RAW_TYPES = ['Bool', 'Int', 'Int8', 'Int16', 'Int32', 'Int64', 'Uint', 'Uint8', 'Uint16', 'Uint32', 'Uint64',
+                 'Uintptr', 'Float32', 'Float64', 'Complex64', 'Complex128', 'UnsafePointer', 'String']
 
     def __init__(self, firstmoduledata):
         self.moddata = firstmoduledata
@@ -28,21 +55,25 @@ class TypesParser():
     def build_all_types(self, depth=1):
         common._info("Building all types...\n")
         common._info(f"Typelinks address is {self.moddata.typelink_addr:#x}.")
+
         for idx in range(self.moddata.type_cnt):
-            type_off = read_mem(self.moddata.typelink_addr + idx*4, forced_addr_sz=4) & 0xFFFFFFFF
+            type_off = read_mem(self.moddata.typelink_addr + idx * 4, forced_addr_sz=4) & 0xFFFFFFFF
+            # common._info(f"type_off: {hex(type_off)}")
             if type_off == 0:
                 continue
             type_addr = self.moddata.types_addr + type_off
-            idc.set_cmt(self.moddata.typelink_addr + idx*4, f"type @ {type_addr:#x}", 0)
+
+            common._info(f"cmt addr : {hex(self.moddata.typelink_addr)}")
+            idc.set_cmt(self.moddata.typelink_addr + idx * 4, f"type @ {type_addr:#x}", 0)
             idaapi.auto_wait()
-            common._debug(f"{idx+1}th type, offset: {type_off:#x}, addr: {type_addr:#x}")
+            common._debug(f"{idx + 1}th type, offset: {type_off:#x}, addr: {type_addr:#x}")
             if type_addr in self.parsed_types.keys():
-                common._debug("  "*depth + 'already parsed')
+                common._debug("  " * depth + 'already parsed')
                 continue
-            #print self.parsed_types.keys()
-            #try:
+            # print self.parsed_types.keys()
+            # try:
             self.parse_type(type_addr=type_addr)
-            #except Exception as e:
+            # except Exception as e:
             #    common._error("Failed to parse type_off( 0x%x ) @ 0x%x" % (type_off, type_addr))
             #    raise Exception(e)
 
@@ -56,24 +87,26 @@ class TypesParser():
         '''
         common._debug("Parsing extra types...")
         runtime_newobject_addr = idc.get_name_ea_simple("runtime_newobject")
+        common._info("runtime_newobject: " + hex(runtime_newobject_addr))
         if runtime_newobject_addr == idc.BADADDR:
             common._debug("runtime_newobject not found")
             return
 
         std_types_cnt = len(self.parsed_types.keys())
         for xrf in idautils.XrefsTo(runtime_newobject_addr):
-            if xrf.type != 17: # type 17: Code_Near_Call
+            if xrf.type != 17:  # type 17: Code_Near_Call
                 continue
 
             xrf_addr = xrf.frm
             target_type_addr = idc.BADADDR
-            if common.CPU_ARCH == "x86" or common.CPU_ARCH == "x64": # x86/x64 Little Endian
+            if common.CPU_ARCH == "x86" or common.CPU_ARCH == "x64":  # x86/x64 Little Endian
                 target_type_addr = _get_target_addr_x86(xrf_addr)
-            elif common.CPU_ARCH == "arm" and common.ADDR_SZ == 4: # ARM 32-bit Little Endian
+                # common._info("target_type_addr:" + target_type_addr)
+            elif common.CPU_ARCH == "arm" and common.ADDR_SZ == 4:  # ARM 32-bit Little Endian
                 target_type_addr = _get_target_addr_arm32(xrf_addr)
-            elif common.CPU_ARCH == "arm" and common.ADDR_SZ == 8: # ARM 64-bit Little Endian
+            elif common.CPU_ARCH == "arm" and common.ADDR_SZ == 8:  # ARM 64-bit Little Endian
                 target_type_addr = _get_target_addr_arm64(xrf_addr)
-            elif common.CPU_ARCH.startswith("mips") and common.ADDR_SZ == 4: # MIPS 32
+            elif common.CPU_ARCH.startswith("mips") and common.ADDR_SZ == 4:  # MIPS 32
                 target_type_addr = _get_target_addr_mips32(xrf_addr)
             if target_type_addr == idc.BADADDR:
                 common._debug("Failed to find target type addr for @ {xrf_addr:#x}")
@@ -86,13 +119,12 @@ class TypesParser():
         extra_type_cnt = len(self.parsed_types.keys()) - std_types_cnt
         common._info(f"Extra types building done, total count: {extra_type_cnt}")
 
-
     def parse_type(self, type_addr=idc.BADADDR, depth=1):
         if type_addr == 0 or type_addr == idc.BADADDR:
             return None
 
         if type_addr in self.parsed_types.keys():
-            common._debug("  "*depth + 'already parsed')
+            common._debug("  " * depth + 'already parsed')
             return self.parsed_types[type_addr].rtype
 
         common._debug(f"Parsing type @ {type_addr:#x}")
@@ -101,57 +133,57 @@ class TypesParser():
         common._debug(f"Type name @ {type_addr:#x}: {rtype.name}")
 
         if rtype.size == 0:
-            common._info("  "*depth + f"> WARNNING: empty type @ {type_addr:#x}")
+            common._info("  " * depth + f"> WARNNING: empty type @ {type_addr:#x}")
 
         # parse the specific kind of data type
         if rtype.get_kind() == "Ptr":
             ptr_type = PtrType(type_addr, self, rtype)
             self.parsed_types[type_addr] = ptr_type
             ptr_type.parse()
-            common._debug("  "*depth + ptr_type.name)
+            common._debug("  " * depth + ptr_type.name)
         elif rtype.get_kind() == "Struct":
             st_type = StructType(type_addr, self, rtype)
             self.parsed_types[type_addr] = st_type
             st_type.parse()
-            common._debug("  "*depth + st_type.name)
+            common._debug("  " * depth + st_type.name)
         elif rtype.get_kind() == "Array":
             arr_type = ArrayType(type_addr, self, rtype)
             self.parsed_types[type_addr] = arr_type
             arr_type.parse()
-            common._debug("  "*depth + arr_type.name)
+            common._debug("  " * depth + arr_type.name)
         elif rtype.get_kind() == "Slice":
             slice_type = SliceType(type_addr, self, rtype)
             self.parsed_types[type_addr] = slice_type
             slice_type.parse()
-            common._debug("  "*depth + slice_type.name)
+            common._debug("  " * depth + slice_type.name)
         elif rtype.get_kind() == "Interface":
             itype = InterfaceType(type_addr, self, rtype)
             self.parsed_types[type_addr] = itype
             itype.parse()
-            common._debug("  "*depth + itype.name)
+            common._debug("  " * depth + itype.name)
         elif rtype.get_kind() == "Chan":
             ch_type = ChanType(type_addr, self, rtype)
             self.parsed_types[type_addr] = ch_type
             ch_type.parse()
-            common._debug("  "*depth + ch_type.name)
+            common._debug("  " * depth + ch_type.name)
         elif rtype.get_kind() == "Func":
             func_type = FuncType(type_addr, self, rtype)
             self.parsed_types[type_addr] = func_type
             func_type.parse()
-            common._debug("  "*depth + func_type.name)
+            common._debug("  " * depth + func_type.name)
         elif rtype.get_kind() == "Map":
             map_type = MapType(type_addr, self, rtype)
             self.parsed_types[type_addr] = map_type
             map_type.parse()
-            common._debug("  "*depth + map_type.name)
+            common._debug("  " * depth + map_type.name)
         elif self.is_raw_type(rtype.get_kind()):
             self.parsed_types[type_addr] = RawType(type_addr, rtype)
-            common._debug("  "*depth + rtype.name)
+            common._debug("  " * depth + rtype.name)
         else:
-          raise Exception(f"Unknown type (kind:{rtype.get_kind()})")
+            raise Exception(f"Unknown type (kind:{rtype.get_kind()})")
 
         # process uncommon type, i.e. types with mothods
-        #if rtype.get_kind() != "Map" and rtype.is_uncomm():
+        # if rtype.get_kind() != "Map" and rtype.is_uncomm():
         if rtype.is_uncomm():
             prim_type = self.parsed_types[type_addr]
             uncomm_type = UncommonType(prim_type, self)
@@ -162,6 +194,7 @@ class TypesParser():
 
     def has_been_parsed(self, addr):
         return (addr in self.parsed_types.keys())
+
 
 class RType():
     '''
@@ -183,15 +216,17 @@ class RType():
     }
     '''
     # Refer: https://golang.org/pkg/reflect/#Kind
-    TYPE_KINDS = ['Invalid Kind','Bool','Int','Int8','Int16','Int32','Int64','Uint','Uint8','Uint16','Uint32','Uint64','Uintptr','Float32','Float64','Complex64','Complex128','Array','Chan','Func','Interface','Map','Ptr','Slice','String','Struct','UnsafePointer']
+    TYPE_KINDS = ['Invalid Kind', 'Bool', 'Int', 'Int8', 'Int16', 'Int32', 'Int64', 'Uint', 'Uint8', 'Uint16', 'Uint32',
+                  'Uint64', 'Uintptr', 'Float32', 'Float64', 'Complex64', 'Complex128', 'Array', 'Chan', 'Func',
+                  'Interface', 'Map', 'Ptr', 'Slice', 'String', 'Struct', 'UnsafePointer']
 
     # see https://golang.org/src/reflect/type.go for constants definition
-    TFLAG_UNCOMM        = 0x1
-    TFLAG_STARPREFIX    = 0x2
-    TFLAG_NAMED         = 0x4
-    KIND_DIRECT_IFACE   = 1 << 5
-    KIND_GCPROG         = 1 << 6 # Type.gc points to GC program
-    KIND_MASK           = (1 << 5) - 1
+    TFLAG_UNCOMM = 0x1
+    TFLAG_STARPREFIX = 0x2
+    TFLAG_NAMED = 0x4
+    KIND_DIRECT_IFACE = 1 << 5
+    KIND_GCPROG = 1 << 6  # Type.gc points to GC program
+    KIND_MASK = (1 << 5) - 1
 
     def __init__(self, addr, firstmoduledata, type_parser):
         self.addr = addr
@@ -216,28 +251,28 @@ class RType():
         self.self_size = 0x20 if ADDR_SZ == 4 else 0x30
 
     def parse(self):
-        common._debug(f"RType @ {self.addr:#x}")
+        common._info(f"RType @ {self.addr:#x}")
         self.size = read_mem(self.addr)
         self.ptrdata = read_mem(self.addr + ADDR_SZ)
-        self.hash = read_mem(self.addr + 2*ADDR_SZ, forced_addr_sz = 4)
-        self.tflag = idc.get_wide_byte(self.addr + 2*ADDR_SZ + 4) & 0xFF
-        self.align = idc.get_wide_byte(self.addr + 2*ADDR_SZ + 5) & 0xFF
-        self.field_align = idc.get_wide_byte(self.addr + 2*ADDR_SZ + 6) & 0xFF
-        self.kind = idc.get_wide_byte(self.addr + 2*ADDR_SZ + 7) & 0xFF & RType.KIND_MASK
-        self.alg = read_mem(self.addr + 2*ADDR_SZ + 8)
-        self.gcdata = read_mem(self.addr + 3*ADDR_SZ + 8)
+        self.hash = read_mem(self.addr + 2 * ADDR_SZ, forced_addr_sz=4)
+        self.tflag = idc.get_wide_byte(self.addr + 2 * ADDR_SZ + 4) & 0xFF
+        self.align = idc.get_wide_byte(self.addr + 2 * ADDR_SZ + 5) & 0xFF
+        self.field_align = idc.get_wide_byte(self.addr + 2 * ADDR_SZ + 6) & 0xFF
+        self.kind = idc.get_wide_byte(self.addr + 2 * ADDR_SZ + 7) & 0xFF & RType.KIND_MASK
+        self.alg = read_mem(self.addr + 2 * ADDR_SZ + 8)
+        self.gcdata = read_mem(self.addr + 3 * ADDR_SZ + 8)
 
-        self.name_off = read_mem(self.addr + 4*ADDR_SZ + 8, forced_addr_sz=4) & 0xFFFFFFFF
+        self.name_off = read_mem(self.addr + 4 * ADDR_SZ + 8, forced_addr_sz=4) & 0xFFFFFFFF
         self.name_addr = (self.moddata.types_addr + self.name_off) & 0xFFFFFFFF
 
-        self.ptrtothis_off = read_mem(self.addr + 4*ADDR_SZ + 12, forced_addr_sz=4) & 0xFFFFFFFF
+        self.ptrtothis_off = read_mem(self.addr + 4 * ADDR_SZ + 12, forced_addr_sz=4) & 0xFFFFFFFF
 
         if self.ptrtothis_off > 0:
             self.ptrtothis_addr = (self.moddata.types_addr + self.ptrtothis_off) & 0xFFFFFFFF
 
         idc.set_cmt(self.addr, "type size", 0)
         idc.set_cmt(self.addr + ADDR_SZ, "type ptrdata", 0)
-        idc.set_cmt(self.addr + 2*ADDR_SZ, "type hash", 0)
+        idc.set_cmt(self.addr + 2 * ADDR_SZ, "type hash", 0)
 
         tflag_comm = "tflag:"
         if self.has_star_prefix():
@@ -246,29 +281,30 @@ class RType():
             tflag_comm += " Named;"
         if self.is_uncomm():
             tflag_comm += " Uncommon"
-        idc.set_cmt(self.addr + 2*ADDR_SZ + 4, tflag_comm, 0)
+        idc.set_cmt(self.addr + 2 * ADDR_SZ + 4, tflag_comm, 0)
         common._debug(tflag_comm)
 
-        idc.set_cmt(self.addr + 2*ADDR_SZ + 5, "align", 0)
-        idc.set_cmt(self.addr + 2*ADDR_SZ + 6, "field align", 0)
-        idc.set_cmt(self.addr + 2*ADDR_SZ + 7, f"kind: {self.get_kind()}", 0)
+        idc.set_cmt(self.addr + 2 * ADDR_SZ + 5, "align", 0)
+        idc.set_cmt(self.addr + 2 * ADDR_SZ + 6, "field align", 0)
+        common._info("kind:-----" + self.get_kind())
+        idc.set_cmt(self.addr + 2 * ADDR_SZ + 7, f"kind: {self.get_kind()}", 0)
         if self.moddata.magic_number == common.MAGIC_112:
-            idc.set_cmt(self.addr + 2*ADDR_SZ + 8, "alg", 0)
+            idc.set_cmt(self.addr + 2 * ADDR_SZ + 8, "alg", 0)
         else:
-            idc.set_cmt(self.addr + 2*ADDR_SZ + 8, "equal func", 0)
-        idc.set_cmt(self.addr + 3*ADDR_SZ + 8, "gcdata", 0)
+            idc.set_cmt(self.addr + 2 * ADDR_SZ + 8, "equal func", 0)
+        idc.set_cmt(self.addr + 3 * ADDR_SZ + 8, "gcdata", 0)
         common._debug(f"kind: {self.get_kind()}")
 
         if self.ptrtothis_off > 0:
-            idc.set_cmt(self.addr + 4*ADDR_SZ + 12, f"ptrtothis addr: {self.ptrtothis_addr:#x}", 0)
+            idc.set_cmt(self.addr + 4 * ADDR_SZ + 12, f"ptrtothis addr: {self.ptrtothis_addr:#x}", 0)
         else:
-            idc.set_cmt(self.addr + 4*ADDR_SZ + 12, "ptrtothis addr", 0)
+            idc.set_cmt(self.addr + 4 * ADDR_SZ + 12, "ptrtothis addr", 0)
         idaapi.auto_wait()
 
         self.name_obj = Name(self.name_addr, self.moddata)
         self.name_obj.parse(self.has_star_prefix())
         self.name = self.name_obj.simple_name
-        idc.set_cmt(self.addr + 4*ADDR_SZ + 8, f"name(@ {self.name_addr:#x} ): {self.name_obj.orig_name_str}", 0)
+        idc.set_cmt(self.addr + 4 * ADDR_SZ + 8, f"name(@ {self.name_addr:#x} ): {self.name_obj.orig_name_str}", 0)
         common._debug(f"name(@ {self.name_addr:#x} ): {self.name_obj.orig_name_str}")
 
         # if a raw type is un-named, and name string is erased, the name it as it's kind string
@@ -279,10 +315,10 @@ class RType():
         if len(self.name) > 0 and self.is_named() and not self.type_parser.is_raw_type(self.get_kind()):
             self.name += ("_%s" % self.get_kind().lower())
 
-        if self.get_kind() == "Struct" and not self.is_named(): # un-named struct type
+        if self.get_kind() == "Struct" and not self.is_named():  # un-named struct type
             self.name = "_struct_"
 
-        if self.get_kind() == "Func" and not self.is_named(): # un-named func type
+        if self.get_kind() == "Func" and not self.is_named():  # un-named func type
             self.name = "_func_"
 
         if self.get_kind() == "Ptr":
@@ -301,6 +337,7 @@ class RType():
             idaapi.auto_wait()
 
         common._debug(f"RType @ {self.addr:#x} parse finished.")
+
     def get_kind(self):
         return self.TYPE_KINDS[self.kind]
 
@@ -318,6 +355,7 @@ class RType():
 
     def __str__(self):
         return self.get_name()
+
 
 class Name():
     '''
@@ -378,22 +416,22 @@ class Name():
     FOLLOWED_BY_PKGPATH = 0x4
 
     def __init__(self, addr, moddata):
-        self.addr                   = addr
-        self.moddata                = moddata
-        self.len                    = 0
-        self.namestr_off            = 0
-        self.is_exported            = None
-        self.is_followed_by_tag     = None
+        self.addr = addr
+        self.moddata = moddata
+        self.len = 0
+        self.namestr_off = 0
+        self.is_exported = None
+        self.is_followed_by_tag = None
         self.is_followed_by_pkgpath = None
-        self.orig_name_str          = ""
-        self.name_str               = ""
-        self.simple_name            = ""
-        self.full_name              = ""
-        self.pkg                    = ""
-        self.pkg_len                = 0
-        self.tag                    = ""
-        self.tag_len                = 0
-        self.tag_off_sz             = 0
+        self.orig_name_str = ""
+        self.name_str = ""
+        self.simple_name = ""
+        self.full_name = ""
+        self.pkg = ""
+        self.pkg_len = 0
+        self.tag = ""
+        self.tag_len = 0
+        self.tag_off_sz = 0
 
     def parse(self, has_star_prefix):
         common._debug(f"Name Type @ {self.addr:#x}")
@@ -405,7 +443,7 @@ class Name():
         self.orig_name_str = 'None'
         if self.moddata.magic_number == common.MAGIC_112 or self.moddata.magic_number == common.MAGIC_116:
             self.len = ((idc.get_wide_byte(self.addr + 1) & 0xFF << 8) | \
-                (idc.get_wide_byte(self.addr + 2) & 0xFF)) & 0xFFFF
+                        (idc.get_wide_byte(self.addr + 2) & 0xFF)) & 0xFFFF
 
             if self.len > 0:
                 tmp_str = idc.get_bytes(self.addr + 3, self.len)
@@ -428,8 +466,8 @@ class Name():
 
         if self.is_followed_by_tag:
             if self.moddata.magic_number == common.MAGIC_112 or self.moddata.magic_number == common.MAGIC_116:
-                self.tag_len = (idc.get_wide_byte(self.addr+ 3 + self.len) & 0xFF << 8) | \
-                    (idc.get_wide_byte(self.addr + 3 + self.len + 1) & 0xFF)
+                self.tag_len = (idc.get_wide_byte(self.addr + 3 + self.len) & 0xFF << 8) | \
+                               (idc.get_wide_byte(self.addr + 3 + self.len + 1) & 0xFF)
                 tmp_tag = idc.get_bytes(self.addr + 3 + self.len + 2, self.tag_len)
                 if tmp_tag:
                     self.tag = tmp_tag.decode("UTF-8", errors="ignore")
@@ -458,8 +496,8 @@ class Name():
 
             pkgpath_off = read_mem(pkgpath_off_addr, forced_addr_sz=4)
             common._debug(f"pkgpath_off: {pkgpath_off:#x}")
-            if pkgpath_off > 0 and pkgpath_off != 0xffffffff: # if error return 0xffffffff
-            # if c_int(pkgpath_off).value > 0:
+            if pkgpath_off > 0 and pkgpath_off != 0xffffffff:  # if error return 0xffffffff
+                # if c_int(pkgpath_off).value > 0:
                 pkgpath_addr = self.moddata.types_addr + pkgpath_off
                 pkgpath_name_obj = Name(pkgpath_addr, self.moddata)
                 common._debug(f"pkgpath_addr: {pkgpath_addr:#x}")
@@ -490,7 +528,7 @@ class Name():
                 flag_comm_str += ", followed by pkgpath"
             else:
                 flag_comm_str += "followed by pkgpath"
-        if len(flag_comm_str) > 6: # has valid flag
+        if len(flag_comm_str) > 6:  # has valid flag
             idc.set_cmt(self.addr, flag_comm_str, 0)
             idaapi.auto_wait()
 
@@ -503,10 +541,10 @@ class Name():
         if self.is_followed_by_tag:
             if self.moddata.magic_number == common.MAGIC_112 or self.moddata == common.MAGIC_116:
                 idc.create_strlit(self.addr + 1 + self.namestr_off + self.tag_off_sz, \
-                    self.addr + 1 + self.namestr_off + self.tag_off_sz + self.tag_len)
+                                  self.addr + 1 + self.namestr_off + self.tag_off_sz + self.tag_len)
                 idc.set_cmt(self.addr + 1 + self.namestr_off + self.tag_off_sz, f"tag of @ {self.addr:#x}", 0)
             else:
-                 idc.create_strlit(self.addr + 3 + self.len + 2, self.addr + 3 + self.len + 2 + self.tag_len)
+                idc.create_strlit(self.addr + 3 + self.len + 2, self.addr + 3 + self.len + 2 + self.tag_len)
             idaapi.auto_wait()
 
     def read_varint(self, offset):
@@ -525,6 +563,7 @@ class Name():
                 return idx + 1, val
             idx += 1
 
+
 class PtrType():
     '''
     Pointer type
@@ -535,6 +574,7 @@ class PtrType():
         elem *rtype // pointer element (pointed at) type
     }
     '''
+
     def __init__(self, addr, type_parser, rtype):
         self.addr = addr
         self.type_parser = type_parser
@@ -561,8 +601,10 @@ class PtrType():
         idaapi.auto_wait()
         common._debug(f"target rtype: {self.target_rtype_origname}")
         common._debug(f"PtrType @ {self.addr:#x} parse finished.")
+
     def __str__(self):
         return self.name
+
 
 class StructType():
     '''
@@ -575,6 +617,7 @@ class StructType():
         fields  []structField // sorted by offset
     }
     '''
+
     def __init__(self, addr, type_parser, rtype):
         self.addr = addr
         self.type_parser = type_parser
@@ -598,20 +641,21 @@ class StructType():
 
         # parse fields
         fields_start_addr = read_mem(self.addr + self.rtype.self_size + ADDR_SZ)
-        fields_cnt = read_mem(self.addr + self.rtype.self_size + 2*ADDR_SZ)
-        fields_cap = read_mem(self.addr + self.rtype.self_size + 3*ADDR_SZ)
+        fields_cnt = read_mem(self.addr + self.rtype.self_size + 2 * ADDR_SZ)
+        fields_cap = read_mem(self.addr + self.rtype.self_size + 3 * ADDR_SZ)
         for idx in range(fields_cnt):
-            field = StructFiled(fields_start_addr + idx*3*ADDR_SZ, self.type_parser)
+            field = StructFiled(fields_start_addr + idx * 3 * ADDR_SZ, self.type_parser)
             field.parse()
             self.fields.append(field)
 
         idc.set_cmt(self.addr + self.rtype.self_size, "pkg path%s" % \
-            (f"(@ {self.pkg_path_addr:#x}): {self.pkg_path}" if (self.pkg_path_addr>0 and len(self.pkg_path)>0) else ""), 0)
-        idc.set_cmt(self.addr + self.rtype.self_size + 2*ADDR_SZ, f"fields count: {fields_cnt:#x}", 0)
-        idc.set_cmt(self.addr + self.rtype.self_size + 3*ADDR_SZ, f"fileds capacity: {fields_cap:#x}", 0)
+                    (f"(@ {self.pkg_path_addr:#x}): {self.pkg_path}" if (
+                            self.pkg_path_addr > 0 and len(self.pkg_path) > 0) else ""), 0)
+        idc.set_cmt(self.addr + self.rtype.self_size + 2 * ADDR_SZ, f"fields count: {fields_cnt:#x}", 0)
+        idc.set_cmt(self.addr + self.rtype.self_size + 3 * ADDR_SZ, f"fileds capacity: {fields_cap:#x}", 0)
         idaapi.auto_wait()
         common._debug("Struct pkg path: %s" % (f"(@ {self.pkg_path_addr:#x}): {self.pkg_path}" \
-            if (self.pkg_path_addr>0 and len(self.pkg_path)>0) else ""))
+                                                   if (self.pkg_path_addr > 0 and len(self.pkg_path) > 0) else ""))
         common._debug(f"Struct fields num: {fields_cnt:#x}")
 
         if len(self.rtype.name) > 0 and fields_cnt > 0:
@@ -620,6 +664,7 @@ class StructType():
             idaapi.auto_wait()
             common._debug(f"Struct fields start addr: {fields_start_addr:#x}")
         common._debug(f"Struct Type @ {self.addr:#x} parse finished.")
+
     def __str__(self):
         if self.rtype:
             ret_str = f"> Struct: {self.rtype.name} ( {len(self.fields)} fields)\n"
@@ -628,6 +673,7 @@ class StructType():
             return ret_str
         else:
             return ""
+
 
 class StructFiled():
     '''
@@ -640,6 +686,7 @@ class StructFiled():
         offsetEmbed uintptr // byte offset of field<<1 | isEmbedded
     }
     '''
+
     def __init__(self, addr, type_parser):
         self.addr = addr
         self.type_parser = type_parser
@@ -669,19 +716,21 @@ class StructFiled():
         else:
             self.rtype = self.type_parser.parse_type(type_addr=self.rtype_addr)
 
-        off_embeded = read_mem(self.addr + 2*ADDR_SZ)
+        off_embeded = read_mem(self.addr + 2 * ADDR_SZ)
         self.offset = off_embeded >> 1
         self.is_embeded = (off_embeded & 1) != 0
 
-        idc.set_cmt(self.addr, f"field name: { self.name_obj.name_str}", 0)
+        idc.set_cmt(self.addr, f"field name: {self.name_obj.name_str}", 0)
         idaapi.auto_wait()
         idc.set_cmt(self.addr + ADDR_SZ, f"field rtype: {self.rtype.name}", 0)
         idaapi.auto_wait()
         common._debug(f"Struct field name: {self.name_obj.name_str}")
         common._debug(f"Struct field rtype: {self.rtype.name}")
         common._debug(f"Struct StructFiled @ {self.addr:#x} parse finished.")
+
     def __str__(self):
         return self.name
+
 
 class ArrayType():
     '''
@@ -695,12 +744,13 @@ class ArrayType():
         len   uintptr
     }
     '''
+
     def __init__(self, addr, type_parser, rtype):
         self.addr = addr
         self.type_parser = type_parser
         self.rtype = rtype
         self.name = rtype.name
-        self.size = rtype.self_size + 3*ADDR_SZ
+        self.size = rtype.self_size + 3 * ADDR_SZ
         self.elem_type = None
         self.slice_type = None
         self.len = 0
@@ -729,8 +779,10 @@ class ArrayType():
         common._debug(f"Array elem type: {self.elem_type.name}")
         common._debug(f"Array slice type: {self.slice_type.name}")
         common._debug(f"Array Type @ {self.addr:#x} parse finished.")
+
     def __str__(self):
         return f"{self.elem_type.name} array(len: {self.len})"
+
 
 class SliceType():
     '''
@@ -742,6 +794,7 @@ class SliceType():
         elem *rtype // slice element type
     }
     '''
+
     def __init__(self, addr, type_parser, rtype):
         self.addr = addr
         self.type_parser = type_parser
@@ -763,11 +816,13 @@ class SliceType():
         idaapi.auto_wait()
         common._debug(f"Slice elem rtype: {self.elem_rtype.name}")
         common._debug(f"Slice Type @ {self.addr:#x} parse finished.")
+
     def __str__(self):
         if self.elem_rtype:
             return f"Slice {self.elem_rtype.name}"
         else:
             return ""
+
 
 class InterfaceType():
     '''
@@ -780,11 +835,12 @@ class InterfaceType():
         methods []imethod // sorted by hash
     }
     '''
+
     def __init__(self, addr, type_parser, rtype):
         self.addr = addr
         self.type_parser = type_parser
         self.rtype = rtype
-        self.size = rtype.self_size + 4*ADDR_SZ
+        self.size = rtype.self_size + 4 * ADDR_SZ
         self.pkg_path_addr = idc.BADADDR
         self.pkg_path_obj = None
         self.pkg_path = ""
@@ -802,27 +858,30 @@ class InterfaceType():
 
         # parse fields
         methods_start_addr = read_mem(self.addr + self.rtype.self_size + ADDR_SZ)
-        methods_cnt = read_mem(self.addr + self.rtype.self_size + 2*ADDR_SZ)
-        methods_cap = read_mem(self.addr + self.rtype.self_size + 3*ADDR_SZ)
+        methods_cnt = read_mem(self.addr + self.rtype.self_size + 2 * ADDR_SZ)
+        methods_cap = read_mem(self.addr + self.rtype.self_size + 3 * ADDR_SZ)
         for idx in range(methods_cnt):
-            imeth = IMethodType(methods_start_addr + idx*2*4, self.type_parser)
+            imeth = IMethodType(methods_start_addr + idx * 2 * 4, self.type_parser)
             imeth.parse()
             self.methods.append(imeth)
 
         idc.set_cmt(self.addr + self.rtype.self_size, "pkg path%s" % \
-            (f"(@ {self.pkg_path_addr:#x}): self.pkg_path" if (self.pkg_path_addr>0 and len(self.pkg_path)>0) else ""), 0)
-        idc.set_cmt(self.addr + self.rtype.self_size + 2*ADDR_SZ, f"methods count: {methods_cnt:#x}", 0)
-        idc.set_cmt(self.addr + self.rtype.self_size + 3*ADDR_SZ, f"methods capacity: {methods_cap:#x}", 0)
+                    (f"(@ {self.pkg_path_addr:#x}): self.pkg_path" if (
+                            self.pkg_path_addr > 0 and len(self.pkg_path) > 0) else ""), 0)
+        idc.set_cmt(self.addr + self.rtype.self_size + 2 * ADDR_SZ, f"methods count: {methods_cnt:#x}", 0)
+        idc.set_cmt(self.addr + self.rtype.self_size + 3 * ADDR_SZ, f"methods capacity: {methods_cap:#x}", 0)
         idaapi.auto_wait()
 
         common._debug("Interface pkg path%s" % \
-            (f"(@ {self.pkg_path_addr:#x}): {self.pkg_path}" if (self.pkg_path_addr>0 and len(self.pkg_path)>0) else ""))
+                      (f"(@ {self.pkg_path_addr:#x}): {self.pkg_path}" if (
+                              self.pkg_path_addr > 0 and len(self.pkg_path) > 0) else ""))
         common._debug(f"Interface methods count: {methods_cnt:#x}")
 
         if len(self.rtype.name) > 0:
             idc.set_name(methods_start_addr, f"{self.rtype.name}_methods", flags=idaapi.SN_FORCE)
             idaapi.auto_wait()
         common._debug(f"Interface @ {self.addr:#x} parse finished.")
+
     def __str__(self):
         if self.rtype:
             ret_str = f"> Interface: {self.rtype.name} ( {len(self.methods)} methods)\n"
@@ -843,6 +902,7 @@ class IMethodType():
         typ  typeOff // .(*FuncType) underneath
     }
     '''
+
     def __init__(self, addr, type_parser):
         self.addr = addr
         self.type_parser = type_parser
@@ -860,7 +920,7 @@ class IMethodType():
         self.name_obj.parse(False)
         self.name = self.name_obj.simple_name
 
-        type_off = read_mem(self.addr+4, forced_addr_sz=4)
+        type_off = read_mem(self.addr + 4, forced_addr_sz=4)
         type_addr = (self.types_addr + type_off) & 0xFFFFFFFF
         if type_off > 0 and type_addr != idc.BADADDR:
             if self.type_parser.has_been_parsed(type_addr):
@@ -884,6 +944,7 @@ class IMethodType():
             return self.name_obj.full_name
         else:
             return ""
+
 
 class ChanType():
     '''
@@ -929,14 +990,15 @@ class ChanType():
 
     def get_direction(self, dir_code):
         if dir_code == self.RECV_DIR:
-          return 'recv'
+            return 'recv'
         elif dir_code == self.SEND_DIR:
-          return 'send'
+            return 'send'
         else:
-          return 'send & recv'
+            return 'send & recv'
 
     def __str__(self):
         return self.name
+
 
 class FuncType():
     '''
@@ -955,6 +1017,7 @@ class FuncType():
     directly follows the funcType (and possibly its uncommonType)."
     '''
     VARIADIC_FLAG = 0x8000
+
     def __init__(self, addr, type_parser, rtype):
         self.addr = addr
         self.type_parser = type_parser
@@ -968,7 +1031,7 @@ class FuncType():
         self.ret_types = list()
         self.ret_type_addrs = list()
         self.name = rtype.name
-        self.size = rtype.self_size + 2*2 # without padding
+        self.size = rtype.self_size + 2 * 2  # without padding
 
     def parse(self):
         common._debug(f"Func Type @ {self.addr:#x}")
@@ -978,7 +1041,7 @@ class FuncType():
             self.is_variadic = True
             self.ret_cnt = self.ret_cnt & 0x7FFF
         self.padding = read_mem(self.addr + self.rtype.self_size + 4, forced_addr_sz=4) & 0xFFFFFFFF
-        if self.padding == 0: # skip padding if present
+        if self.padding == 0:  # skip padding if present
             self.size += 4
         curr_addr = self.addr + self.size
         if self.rtype.is_uncomm():
@@ -986,7 +1049,7 @@ class FuncType():
 
         for in_idx in range(self.para_cnt):
             curr_para_type = None
-            curr_para_type_off = curr_addr + in_idx*ADDR_SZ
+            curr_para_type_off = curr_addr + in_idx * ADDR_SZ
             para_type_addr = read_mem(curr_para_type_off)
             self.para_type_addrs.append(para_type_addr)
             if self.type_parser.has_been_parsed(para_type_addr):
@@ -999,7 +1062,7 @@ class FuncType():
         curr_addr += self.para_cnt * ADDR_SZ
         for out_idx in range(self.ret_cnt):
             curr_ret_type = None
-            curr_ret_type_off = curr_addr + out_idx*ADDR_SZ
+            curr_ret_type_off = curr_addr + out_idx * ADDR_SZ
             ret_type_addr = read_mem(curr_ret_type_off)
             self.ret_type_addrs.append(ret_type_addr)
             if self.type_parser.has_been_parsed(ret_type_addr):
@@ -1011,12 +1074,15 @@ class FuncType():
 
         idc.set_cmt(self.addr + self.rtype.self_size, f"Parameter count: {self.para_cnt}", 0)
         idc.set_cmt(self.addr + self.rtype.self_size + 2, "%s%s" % ("Flag: Varidic;" \
-            if self.ret_cnt & FuncType.VARIADIC_FLAG else "", f"Return value count: {self.ret_cnt}"), 0)
+                                                                        if self.ret_cnt & FuncType.VARIADIC_FLAG else "",
+                                                                    f"Return value count: {self.ret_cnt}"), 0)
         idaapi.auto_wait()
         common._debug(f"Func Type @ {self.addr:#x} parse finished.")
+
     def __str__(self):
         return "> func %s (para: %d %s  -  return: %d)\n" % (self.rtype.name, self.para_cnt, \
-            "+ [...]" if self.is_variadic else "", self.ret_cnt)
+                                                             "+ [...]" if self.is_variadic else "", self.ret_cnt)
+
 
 class MapType():
     '''
@@ -1036,6 +1102,7 @@ class MapType():
         flags      uint32
     }
     '''
+
     def __init__(self, addr, type_parser, rtype):
         self.addr = addr
         self.type_parser = type_parser
@@ -1076,40 +1143,40 @@ class MapType():
         else:
             self.elem_type = self.type_parser.parse_type(type_addr=elem_type_addr)
 
-        buck_type_addr = read_mem(map_attr_addr + 2*ADDR_SZ)
+        buck_type_addr = read_mem(map_attr_addr + 2 * ADDR_SZ)
         if self.type_parser.has_been_parsed(buck_type_addr):
             self.buck_type = self.type_parser.parsed_types[buck_type_addr]
         else:
             self.buck_type = self.type_parser.parse_type(type_addr=buck_type_addr)
 
         if self.go_subver < 14:
-            self.key_size = idc.get_wide_byte(map_attr_addr + 3*ADDR_SZ) & 0xFF
-            self.val_size = idc.get_wide_byte(map_attr_addr + 3*ADDR_SZ + 1) & 0xFF
-            self.buck_size = read_mem(map_attr_addr + 3*ADDR_SZ + 2, forced_addr_sz=2) & 0xFFFF
-            self.flags = read_mem(map_attr_addr + 3*ADDR_SZ + 4, forced_addr_sz=4) & 0xFFFFFFFF
+            self.key_size = idc.get_wide_byte(map_attr_addr + 3 * ADDR_SZ) & 0xFF
+            self.val_size = idc.get_wide_byte(map_attr_addr + 3 * ADDR_SZ + 1) & 0xFF
+            self.buck_size = read_mem(map_attr_addr + 3 * ADDR_SZ + 2, forced_addr_sz=2) & 0xFFFF
+            self.flags = read_mem(map_attr_addr + 3 * ADDR_SZ + 4, forced_addr_sz=4) & 0xFFFFFFFF
         else:
-            self.hasher_func_addr = read_mem(map_attr_addr + 3*ADDR_SZ) & 0xFFFFFFFFFFFFFFFF
-            self.key_size = idc.get_wide_byte(map_attr_addr + 4*ADDR_SZ) & 0xFF
-            self.val_size = idc.get_wide_byte(map_attr_addr + 4*ADDR_SZ + 1) & 0xFF
-            self.buck_size = read_mem(map_attr_addr + 4*ADDR_SZ + 2, forced_addr_sz=2) & 0xFFFF
-            self.flags = read_mem(map_attr_addr + 4*ADDR_SZ + 4, forced_addr_sz=4) & 0xFFFFFFFF
+            self.hasher_func_addr = read_mem(map_attr_addr + 3 * ADDR_SZ) & 0xFFFFFFFFFFFFFFFF
+            self.key_size = idc.get_wide_byte(map_attr_addr + 4 * ADDR_SZ) & 0xFF
+            self.val_size = idc.get_wide_byte(map_attr_addr + 4 * ADDR_SZ + 1) & 0xFF
+            self.buck_size = read_mem(map_attr_addr + 4 * ADDR_SZ + 2, forced_addr_sz=2) & 0xFFFF
+            self.flags = read_mem(map_attr_addr + 4 * ADDR_SZ + 4, forced_addr_sz=4) & 0xFFFFFFFF
 
         self.name = f"map [{self.key_type.name}]{self.elem_type.name}"
 
         idc.set_cmt(map_attr_addr, f"Key type: {self.key_type.name}", 0)
         idc.set_cmt(map_attr_addr + ADDR_SZ, f"Elem type: {self.elem_type.name} ", 0)
-        idc.set_cmt(map_attr_addr + 2*ADDR_SZ, f"Bucket type: {self.buck_type.name}", 0)
+        idc.set_cmt(map_attr_addr + 2 * ADDR_SZ, f"Bucket type: {self.buck_type.name}", 0)
         if self.go_subver < 14:
-            idc.set_cmt(map_attr_addr + 3*ADDR_SZ, f"Key size: {self.key_size:#x}", 0)
-            idc.set_cmt(map_attr_addr + 3*ADDR_SZ + 1, f"Value size: {self.val_size:#x}", 0)
-            idc.set_cmt(map_attr_addr + 3*ADDR_SZ + 2, f"Bucket size: {self.buck_size:#x}", 0)
-            idc.set_cmt(map_attr_addr + 3*ADDR_SZ + 4, f"Flags: {self.flags:#x}", 0)
+            idc.set_cmt(map_attr_addr + 3 * ADDR_SZ, f"Key size: {self.key_size:#x}", 0)
+            idc.set_cmt(map_attr_addr + 3 * ADDR_SZ + 1, f"Value size: {self.val_size:#x}", 0)
+            idc.set_cmt(map_attr_addr + 3 * ADDR_SZ + 2, f"Bucket size: {self.buck_size:#x}", 0)
+            idc.set_cmt(map_attr_addr + 3 * ADDR_SZ + 4, f"Flags: {self.flags:#x}", 0)
         else:
-            idc.set_cmt(map_attr_addr + 3*ADDR_SZ, "hash function for hashing keys (ptr to key, seed) -> hash", 0)
-            idc.set_cmt(map_attr_addr + 4*ADDR_SZ, f"Key size: {self.key_size:#x}", 0)
-            idc.set_cmt(map_attr_addr + 4*ADDR_SZ + 1, f"Value size: {self.val_size:#x}", 0)
-            idc.set_cmt(map_attr_addr + 4*ADDR_SZ + 2, f"Bucket size: {self.buck_size:#x}", 0)
-            idc.set_cmt(map_attr_addr + 4*ADDR_SZ + 4, f"Flags: {self.flags:#x}", 0)
+            idc.set_cmt(map_attr_addr + 3 * ADDR_SZ, "hash function for hashing keys (ptr to key, seed) -> hash", 0)
+            idc.set_cmt(map_attr_addr + 4 * ADDR_SZ, f"Key size: {self.key_size:#x}", 0)
+            idc.set_cmt(map_attr_addr + 4 * ADDR_SZ + 1, f"Value size: {self.val_size:#x}", 0)
+            idc.set_cmt(map_attr_addr + 4 * ADDR_SZ + 2, f"Bucket size: {self.buck_size:#x}", 0)
+            idc.set_cmt(map_attr_addr + 4 * ADDR_SZ + 4, f"Flags: {self.flags:#x}", 0)
         idaapi.auto_wait()
 
         common._debug(f"Map Key type: {self.key_type.name}")
@@ -1118,6 +1185,7 @@ class MapType():
 
     def __str__(self):
         return self.name
+
 
 class UncommonType():
     '''
@@ -1158,7 +1226,8 @@ class UncommonType():
         self.size = UncommonType.SIZE
 
     def parse(self):
-        common._debug(f"Start to parse Uncommon type @ {self.addr:#x} , Uncommon field start addr @ {self.uncomm_type_addr:#x}")
+        common._debug(
+            f"Start to parse Uncommon type @ {self.addr:#x} , Uncommon field start addr @ {self.uncomm_type_addr:#x}")
         pkgpath_off = read_mem(self.uncomm_type_addr, forced_addr_sz=4) & 0xFFFFFFFF
         if pkgpath_off != 0:
             self.pkgpath_addr = self.types_addr + pkgpath_off
@@ -1174,27 +1243,31 @@ class UncommonType():
         # parse methods
         methods_start_addr = (self.uncomm_type_addr + self.meth_off) & 0xFFFFFFFF
         for i in range(self.meth_cnt):
-            #meth_addr = self.uncomm_type_addr + i * self.size
+            # meth_addr = self.uncomm_type_addr + i * self.size
             meth = MethodType(methods_start_addr, self.type_parser)
             meth.parse()
             self.methods.append(meth)
             methods_start_addr += meth.size
 
         idc.set_cmt(self.uncomm_type_addr, "pkg path%s" % \
-            (f"(@ {self.pkgpath_addr:#x}): {self.pkg_path}" if (pkgpath_off>0 and len(self.pkg_path)>0) else ""), 0)
+                    (f"(@ {self.pkgpath_addr:#x}): {self.pkg_path}" if (
+                            pkgpath_off > 0 and len(self.pkg_path) > 0) else ""), 0)
         common._debug("Ucommon type pkg path%s" % \
-            (f"(@ {self.pkgpath_addr:#x}): {self.pkg_path}" if (pkgpath_off>0 and len(self.pkg_path)>0) else ""))
+                      (f"(@ {self.pkgpath_addr:#x}): {self.pkg_path}" if (
+                              pkgpath_off > 0 and len(self.pkg_path) > 0) else ""))
         idc.set_cmt(self.uncomm_type_addr + 4, f"methods number: {self.meth_cnt}", 0)
         common._debug(f"Uncommon type methods number: {self.meth_cnt}")
         idc.set_cmt(self.uncomm_type_addr + 6, f"exported methods number: {self.xmeth_cnt}", 0)
         if self.meth_cnt > 0:
-            idc.set_cmt(self.uncomm_type_addr + 8, f"methods addr: {(self.uncomm_type_addr + self.meth_off) & 0xFFFFFFFF:#x}", 0)
+            idc.set_cmt(self.uncomm_type_addr + 8,
+                        f"methods addr: {(self.uncomm_type_addr + self.meth_off) & 0xFFFFFFFF:#x}", 0)
             common._debug(f"Uncommon type methods addr: {(self.uncomm_type_addr + self.meth_off) & 0xFFFFFFFF:#x}")
         else:
             idc.set_cmt(self.uncomm_type_addr + 8, "methods offset", 0)
         idc.set_cmt(self.uncomm_type_addr + 12, f"unused field: {self.unused}", 0)
         idaapi.auto_wait()
-        common._debug(f"finished to parse Uncommon type @ {self.addr:#x} , Uncommon field start addr @ {self.uncomm_type_addr:#x}")
+        common._debug(
+            f"finished to parse Uncommon type @ {self.addr:#x} , Uncommon field start addr @ {self.uncomm_type_addr:#x}")
 
     def __str__(self):
         ret_str = "%s" % self.prim_type
@@ -1218,6 +1291,7 @@ class MethodType():
         tfn  textOff // fn used for normal method call // offset from top of text section
     }
     '''
+
     def __init__(self, addr, type_parser):
         self.addr = addr
         self.type_parser = type_parser
@@ -1232,7 +1306,7 @@ class MethodType():
         self.ifn_off = 0
         self.tfn_addr = idc.BADADDR
         self.tfn_off = 0
-        self.size = 4*4
+        self.size = 4 * 4
 
     def parse(self):
         common._debug("MethodType @ {self.addr:#x}")
@@ -1257,14 +1331,16 @@ class MethodType():
         self.tfn_off = read_mem(self.addr + 12, forced_addr_sz=4) & 0xFFFFFFFF
 
         idc.set_cmt(self.addr, "Method Name%s" % \
-            (f"(@ {self.name_addr:#x}): {self.name}" if (name_off>0 and len(self.name)>0) else ""), 0)
+                    (f"(@ {self.name_addr:#x}): {self.name}" if (name_off > 0 and len(self.name) > 0) else ""), 0)
         common._debug("Ucommon type Method Name%s" % \
-            (f"(@ {self.name_addr:#x}): {self.name}" if (name_off>0 and len(self.name)>0) else ""))
+                      (f"(@ {self.name_addr:#x}): {self.name}" if (name_off > 0 and len(self.name) > 0) else ""))
 
         idc.set_cmt(self.addr + 4, "Method Type%s" % \
-            (f"(@ {self.mtype_addr:#x}): {self.mtype.name_obj.name_str}" if (type_off>0 and self.mtype is not None) else ""), 0)
+                    (f"(@ {self.mtype_addr:#x}): {self.mtype.name_obj.name_str}" if (
+                            type_off > 0 and self.mtype is not None) else ""), 0)
         common._debug("Uncommon type Method Type%s" % \
-            (f"(@ {self.mtype_addr:#x}): {self.mtype.name_obj.name_str}" if (type_off>0 and self.mtype is not None) else ""))
+                      (f"(@ {self.mtype_addr:#x}): {self.mtype.name_obj.name_str}" if (
+                              type_off > 0 and self.mtype is not None) else ""))
 
         self.ifn_addr = (self.text_addr + self.ifn_off) & 0xFFFFFFFF
         ifn_name = idc.get_func_name(self.ifn_addr)
@@ -1274,7 +1350,7 @@ class MethodType():
             else:
                 ifn_name == "_func_"
         idc.set_cmt(self.addr + 8, "ifn%s" % \
-            (f"(@ {self.ifn_addr:#x}): {ifn_name}" if self.ifn_off>0 else ""), 0)
+                    (f"(@ {self.ifn_addr:#x}): {ifn_name}" if self.ifn_off > 0 else ""), 0)
 
         self.tfn_addr = (self.text_addr + self.tfn_off) & 0xFFFFFFFF
         tfn_name = idc.get_func_name(self.tfn_addr)
@@ -1284,15 +1360,17 @@ class MethodType():
             else:
                 tfn_name = "_func_"
         idc.set_cmt(self.addr + 12, "tfn%s" % \
-            (f"(@ {self.tfn_addr:#x}): {tfn_name}" if self.tfn_off>0 else ""), 0)
+                    (f"(@ {self.tfn_addr:#x}): {tfn_name}" if self.tfn_off > 0 else ""), 0)
 
         idaapi.auto_wait()
         common._debug("MethodType @ 0x%x finished." % self.addr)
+
 
 class RawType():
     '''
     Wrapper for built-in types (contains only rtype)
     '''
+
     def __init__(self, addr, rtype):
         self.addr = addr
         self.rtype = rtype
@@ -1302,26 +1380,29 @@ class RawType():
     def __str__(self):
         return "> raw type: %s\n" % self.name
 
+
 def _get_target_addr_x86(xrf_addr):
     '''
     Find target type addr for xrf_addr in x86/x64 little endian binary
     '''
     target_type_addr = idc.BADADDR
     curr_addr = xrf_addr
-    for i in range(8): # Search back 8 insns at most
+    for i in range(8):  # Search back 8 insns at most
         curr_addr = idc.prev_head(curr_addr)
 
         mnem = idc.print_insn_mnem(curr_addr)
-        if mnem != "lea": continue
+        if mnem != "lea":
+            continue
 
         target_opnd_type = idc.get_operand_type(curr_addr, 0)
         target_opnd_value = idc.get_operand_value(curr_addr, 0)
-        if target_opnd_type == 0x1 or target_opnd_value == 0x0: # Reg eax or rax
+        if target_opnd_type == 0x1 or target_opnd_value == 0x0:  # Reg eax or rax
             target_type_addr = idc.get_operand_value(curr_addr, 1)
             if target_type_addr > 0:
                 break
 
     return target_type_addr
+
 
 def _get_target_addr_arm32(xrf_addr):
     '''
@@ -1329,7 +1410,7 @@ def _get_target_addr_arm32(xrf_addr):
     '''
     target_type_addr = idc.BADADDR
     curr_addr = xrf_addr
-    for i in range(8): # Search back 8 insns at most
+    for i in range(8):  # Search back 8 insns at most
         curr_addr = idc.prev_head(curr_addr)
 
         mnem = idc.print_insn_mnem(curr_addr)
@@ -1337,7 +1418,7 @@ def _get_target_addr_arm32(xrf_addr):
 
         target_opnd_type = idc.get_operand_type(curr_addr, 0)
         target_opnd_value = idc.get_operand_value(curr_addr, 0)
-        if target_opnd_type == 0x1 or target_opnd_value == 0x0: # Reg X0
+        if target_opnd_type == 0x1 or target_opnd_value == 0x0:  # Reg X0
             target_type_addr_ptr = idc.get_operand_value(curr_addr, 1)
             if target_type_addr_ptr > 0 and target_type_addr_ptr != idc.BADADDR:
                 target_type_addr = common.read_mem(target_type_addr_ptr, read_only=True)
@@ -1346,13 +1427,14 @@ def _get_target_addr_arm32(xrf_addr):
 
     return target_type_addr
 
+
 def _get_target_addr_arm64(xrf_addr):
     '''
     Find target type addr for xrf_addr in ARM 64-bit little endian binary
     '''
     target_type_addr = idc.BADADDR
     curr_addr = xrf_addr
-    for i in range(8): # Search back 8 insns at most
+    for i in range(8):  # Search back 8 insns at most
         curr_addr = idc.prev_head(curr_addr)
 
         mnem = idc.print_insn_mnem(curr_addr)
@@ -1360,12 +1442,13 @@ def _get_target_addr_arm64(xrf_addr):
 
         target_opnd_type = idc.get_operand_type(curr_addr, 0)
         target_opnd_value = idc.get_operand_value(curr_addr, 0)
-        if target_opnd_type == 0x1 or target_opnd_value == 0x81: # Reg X0
+        if target_opnd_type == 0x1 or target_opnd_value == 0x81:  # Reg X0
             target_type_addr = idc.get_operand_value(curr_addr, 1)
             if target_type_addr > 0:
                 break
 
     return target_type_addr
+
 
 def _get_target_addr_mips32(xrf_addr):
     '''
@@ -1373,7 +1456,7 @@ def _get_target_addr_mips32(xrf_addr):
     '''
     target_type_addr = idc.BADADDR
     curr_addr = xrf_addr
-    for i in range(8): # Search back 8 insns at most
+    for i in range(8):  # Search back 8 insns at most
         curr_addr = idc.prev_head(curr_addr)
 
         mnem = idc.print_insn_mnem(curr_addr)
@@ -1381,7 +1464,7 @@ def _get_target_addr_mips32(xrf_addr):
 
         target_opnd_type = idc.get_operand_type(curr_addr, 0)
         target_opnd_value = idc.get_operand_value(curr_addr, 0)
-        if target_opnd_type == 0x1 or target_opnd_value <= 0x4: # Reg $at/$a0/$v0/$v1
+        if target_opnd_type == 0x1 or target_opnd_value <= 0x4:  # Reg $at/$a0/$v0/$v1
             target_type_addr = idc.get_operand_value(curr_addr, 1)
             if target_type_addr > 0:
                 break
