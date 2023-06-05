@@ -59,8 +59,9 @@ Additionally, the **str_ptr.py** will parse string pointers by specify the start
 
 ### Note
 
-1. This tool is written in Python3, and tested on IDA7.4+;
+1. This tool is written in Python3, and tested on IDA7.6+;
 2. The strings parsing module was migrated from [golang_loader_assist](https://github.com/strazzere/golang_loader_assist), and I added the feature of string pointers parsing. It only supports x86(32bit & 64bit) architecture for now.
+3. support golang v1.20
 
 ### Refer
 
