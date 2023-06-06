@@ -65,7 +65,7 @@ def test_firstmoduledata(possible_addr, magic_number):
             return True
         else:
             common._debug(f"Not firstmoduledata addr: @ {possible_addr:#x}")
-    elif magic_number == common.MAGIC_120:
+    elif magic_number == common.MAGIC_118 or magic_number == common.MAGIC_120:
         funcnametab_off = read_mem(mod_data.pcheader_addr + 8 + 3 * ADDR_SZ, read_only=True)
         filetab_off = read_mem(mod_data.pcheader_addr + 8 + 5 * ADDR_SZ, read_only=True)
         pctab_off = read_mem(mod_data.pcheader_addr + 8 + 6 * ADDR_SZ, read_only=True)
