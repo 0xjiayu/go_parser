@@ -15,6 +15,7 @@ ENDIAN = 0 # 0: little endian; 1: big endian
 MAGIC_112 = 0xFFFFFFFB  # Magic Number from version 1.12
 MAGIC_116 = 0xFFFFFFFA  # Magic Number from version 1.16
 MAGIC_118 = 0xFFFFFFF0  # Magic Number from version 1.18
+MAGIC_120 = 0xFFFFFFF1  # Magic Number from version 1.20
 
 
 if finfo.is_64bit():

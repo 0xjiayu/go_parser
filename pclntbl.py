@@ -122,7 +122,8 @@ class Pclntbl():
         '''
         if self.magic_number == common.MAGIC_112 \
             or self.magic_number == common.MAGIC_116 \
-            or self.magic_number == common.MAGIC_118:
+            or self.magic_number == common.MAGIC_118 \
+            or self.magic_number == common.MAGIC_120:
             common._info(f"Magic Number: {self.magic_number:#x}")
         else:
             common._error("Invalid pclntbl header magic number!")
@@ -194,7 +195,7 @@ class Pclntbl():
             idc.set_cmt(self.start_addr + 8 + 6*self.ptr_sz, f"func table offset, real addr: {self.func_tbl_addr:#x}", 0)
             idc.set_name(self.func_tbl_addr, "pc0", flags=idaapi.SN_FORCE)
             idaapi.auto_wait()
-        elif self.magic_number == common.MAGIC_118:
+        elif self.magic_number == common.MAGIC_118 or self.magic_number == common.MAGIC_120:
             self.srcfile_num = common.read_mem(self.start_addr + 8 + self.ptr_sz, forced_addr_sz=self.ptr_sz)
             idc.set_cmt(self.start_addr + 8 + self.ptr_sz, "srcfile count number", 0)
             common._info(f"Total srcfile number: {self.srcfile_num:#x}")
@@ -289,8 +290,10 @@ class Pclntbl():
 
         refer: https://go.dev/src/runtime/symtab.go
 
-        moduledata.pclntbl_addr == moduledata.ftab_addr == pcheader.pclntbl_addr == (pcheader.start_addr + pclntbl_off)
+        moduledata.pclntbl_addr == moduledata.ftab_addr == pcheader.pclntbl_addr == \
+            (pcheader.start_addr + pclntbl_off)
         moduledata.ftab: []functab
+
         type functab struct {
             entryoff uint32 // relative to runtime.text
             funcoff  uint32 // relative to pclntbl_addr
@@ -401,7 +404,7 @@ class Pclntbl():
             self.parse_funcs_112()
         elif self.magic_number == common.MAGIC_116:
             self.parse_funcs_116()
-        elif self.magic_number == common.MAGIC_118:
+        elif self.magic_number == common.MAGIC_118 or self.magic_number == common.MAGIC_120:
             self.parse_funcs_118()
         idaapi.auto_wait()
 
@@ -410,7 +413,7 @@ class Pclntbl():
 
         if self.magic_number == common.MAGIC_112:
             self.parse_srcfile_112()
-        elif self.magic_number == common.MAGIC_116 or self.magic_number == common.MAGIC_118:
+        elif self.magic_number == common.MAGIC_116 or self.magic_number == common.MAGIC_118 or self.magic_number == common.MAGIC_120:
             self.parse_srcfile_latest()
 
 
@@ -471,6 +474,47 @@ class FuncStruct():
         flag      funcFlag
         _         [1]byte // pad
         nfuncdata uint8   // must be last, must end on a uint32-aligned boundary
+    }
+
+    type _func struct {     // Go 1.20
+        entryOff uint32 // start pc, as offset from moduledata.text/pcHeader.textStart
+        nameOff  int32  // function name, as index into moduledata.funcnametab.
+
+        args        int32  // in/out args size
+        deferreturn uint32 // offset of start of a deferreturn call instruction from entry, if any.
+
+        pcsp      uint32
+        pcfile    uint32
+        pcln      uint32
+        npcdata   uint32
+        cuOffset  uint32 // runtime.cutab offset of this function's CU
+        startLine int32  // line number of start of function (func keyword/TEXT directive)
+        funcID    funcID // set for certain special runtime functions
+        flag      funcFlag
+        _         [1]byte // pad
+        nfuncdata uint8   // must be last, must end on a uint32-aligned boundary
+
+        // The end of the struct is followed immediately by two variable-length
+        // arrays that reference the pcdata and funcdata locations for this
+        // function.
+
+        // pcdata contains the offset into moduledata.pctab for the start of
+        // that index's table. e.g.,
+        // &moduledata.pctab[_func.pcdata[_PCDATA_UnsafePoint]] is the start of
+        // the unsafe point table.
+        //
+        // An offset of 0 indicates that there is no table.
+        //
+        // pcdata [npcdata]uint32
+
+        // funcdata contains the offset past moduledata.gofunc which contains a
+        // pointer to that index's funcdata. e.g.,
+        // *(moduledata.gofunc +  _func.funcdata[_FUNCDATA_ArgsPointerMaps]) is
+        // the argument pointer map.
+        //
+        // An offset of ^uint32(0) indicates that there is no entry.
+        //
+        // funcdata [nfuncdata]uint32
     }
 
     // A FuncID identifies particular functions that need to be treated
@@ -543,6 +587,7 @@ class FuncStruct():
         self.nfuncdata   = 0
         self.npcdata     = 0
         self.deferreturn = 0
+        self.startline   = 0
         self.func_id     = -1
         self.func_flag   = -1
         self.func_type   = "normal" #Default type
@@ -558,7 +603,7 @@ class FuncStruct():
 
             name_addr = common.read_mem(self.addr + self.pclntbl.ptr_sz, forced_addr_sz=4, read_only=is_test) \
                 + self.pclntbl.funcnametab_addr
-        elif self.pclntbl.magic_number == common.MAGIC_118:
+        elif self.pclntbl.magic_number == common.MAGIC_118 or self.pclntbl.magic_number == common.MAGIC_120:
             func_entry_off = common.read_mem(self.addr, forced_addr_sz=4, read_only=is_test)
             func_addr = self.pclntbl.text_sect_addr + func_entry_off
 
@@ -638,7 +683,26 @@ class FuncStruct():
             try:
                 self.func_type = FUNC_TYPES[self.func_id]
             except Exception as e:
-                common._debug(f"Invalid funcID. Curr func entry: {real_func_addr.start_ea:#x}, func st addr: {self.addr:#x}, func id: {self.func_id:#x}")
+                common._debug(f"Invalid funcID. Curr func entry: {real_func_addr.start_ea:#x}, \
+                func st addr: {self.addr:#x}, func id: {self.func_id:#x}")
+        elif self.pclntbl.magic_number == common.MAGIC_120:
+            self.args        = common.read_mem(self.addr + 2*4, forced_addr_sz=4, read_only=is_test)
+            self.deferreturn = common.read_mem(self.addr + 3*4, forced_addr_sz=4, read_only=is_test)
+            self.pcsp        = common.read_mem(self.addr + 4*4, forced_addr_sz=4, read_only=is_test)
+            self.pcfile      = common.read_mem(self.addr + 5*4, forced_addr_sz=4, read_only=is_test)
+            self.pcln        = common.read_mem(self.addr + 6*4, forced_addr_sz=4, read_only=is_test)
+            self.npcdata     = common.read_mem(self.addr + 7*4, forced_addr_sz=4, read_only=is_test)
+            self.cuOffset    = common.read_mem(self.addr + 8*4, forced_addr_sz=4, read_only=is_test)
+            self.startline   = common.read_mem(self.addr + 9*4, forced_addr_sz=4, read_only=is_test)
+            self.func_id     = idc.get_wide_byte(self.addr + 10*4) & 0xFF
+            self.func_flag   = idc.get_wide_byte(self.addr + 10*4 + 1) & 0xFF
+            self.nfuncdata   = idc.get_wide_byte(self.addr + 10*4 + 3) & 0xFF
+
+            try:
+                self.func_type = FUNC_TYPES[self.func_id]
+            except Exception as e:
+                common._debug(f"Invalid funcID. Curr func entry: {real_func_addr.start_ea:#x}, \
+                func st addr: {self.addr:#x}, func id: {self.func_id:#x}")
 
         if is_test: return
 
@@ -661,16 +725,28 @@ class FuncStruct():
             idc.set_cmt(self.addr + self.pclntbl.ptr_sz + 8*4, f"func_type: {self.func_type}", 0)
             idc.set_cmt(self.addr + self.pclntbl.ptr_sz + 8*4 + 3, "nfuncdata", 0)
         elif self.pclntbl.magic_number == common.MAGIC_118:
-            idc.set_cmt(self.addr + self.pclntbl.ptr_sz + 4, "args", 0)
-            idc.set_cmt(self.addr + self.pclntbl.ptr_sz + 2*4, "deferreturn", 0)
-            idc.set_cmt(self.addr + self.pclntbl.ptr_sz + 3*4, "pcsp", 0)
-            idc.set_cmt(self.addr + self.pclntbl.ptr_sz + 4*4, "pcfile", 0)
-            idc.set_cmt(self.addr + self.pclntbl.ptr_sz + 5*4, "pcln", 0)
-            idc.set_cmt(self.addr + self.pclntbl.ptr_sz + 6*4, "npcdata", 0)
-            idc.set_cmt(self.addr + self.pclntbl.ptr_sz + 7*4, "cuOffset", 0)
-            idc.set_cmt(self.addr + self.pclntbl.ptr_sz + 8*4, f"func_type: {self.func_type}", 0)
-            idc.set_cmt(self.addr + self.pclntbl.ptr_sz + 8*4 + 1, "func_flag", 0)
-            idc.set_cmt(self.addr + self.pclntbl.ptr_sz + 8*4 + 3, "nfuncdata", 0)
+            idc.set_cmt(self.addr + 2*4, "args", 0)
+            idc.set_cmt(self.addr + 3*4, "deferreturn", 0)
+            idc.set_cmt(self.addr + 4*4, "pcsp", 0)
+            idc.set_cmt(self.addr + 5*4, "pcfile", 0)
+            idc.set_cmt(self.addr + 6*4, "pcln", 0)
+            idc.set_cmt(self.addr + 7*4, "npcdata", 0)
+            idc.set_cmt(self.addr + 8*4, "cuOffset", 0)
+            idc.set_cmt(self.addr + 9*4, f"func_type: {self.func_type}", 0)
+            idc.set_cmt(self.addr + 9*4 + 1, "func_flag", 0)
+            idc.set_cmt(self.addr + 9*4 + 3, "nfuncdata", 0)
+        elif self.pclntbl.magic_number == common.MAGIC_120:
+            idc.set_cmt(self.addr + 2*4, "args", 0)
+            idc.set_cmt(self.addr + 3*4, "deferreturn", 0)
+            idc.set_cmt(self.addr + 4*4, "pcsp", 0)
+            idc.set_cmt(self.addr + 5*4, "pcfile", 0)
+            idc.set_cmt(self.addr + 6*4, "pcln", 0)
+            idc.set_cmt(self.addr + 7*4, "npcdata", 0)
+            idc.set_cmt(self.addr + 8*4, "cuOffset", 0)
+            idc.set_cmt(self.addr + 9*4, "startline", 0)
+            idc.set_cmt(self.addr + 10*4, f"func_type: {self.func_type}", 0)
+            idc.set_cmt(self.addr + 10*4 + 1, "func_flag", 0)
+            idc.set_cmt(self.addr + 10*4 + 3, "nfuncdata", 0)
         idaapi.auto_wait()
 
 
