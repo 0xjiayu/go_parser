@@ -643,6 +643,8 @@ class FuncStruct():
                 common._debug(f"Rename function {real_func_addr.start_ea:#x}: {self.name}")
             else:
                 common._error(f"Failed to rename function @ {real_func_addr.start_ea:#x}")
+        else:
+            common._error(f"Failed to get real function address: {func_addr:#x}")
 
         if self.pclntbl.magic_number == common.MAGIC_112:
             self.args      = common.read_mem(self.addr + self.pclntbl.ptr_sz + 4, forced_addr_sz=4, read_only=is_test)
@@ -666,6 +668,7 @@ class FuncStruct():
             try:
                 self.func_type = FUNC_TYPES[self.func_id]
             except Exception as e:
+                self.func_type = FUNC_TYPES[-1]
                 common._debug(f"Invalid funcID. Curr func entry: {real_func_addr.start_ea:#x}, func st addr: {self.addr:#x}, func id: {self.func_id:#x}")
 
         elif self.pclntbl.magic_number == common.MAGIC_118:
@@ -683,6 +686,7 @@ class FuncStruct():
             try:
                 self.func_type = FUNC_TYPES[self.func_id]
             except Exception as e:
+                self.func_type = FUNC_TYPES[-1]
                 common._debug(f"Invalid funcID. Curr func entry: {real_func_addr.start_ea:#x}, \
                 func st addr: {self.addr:#x}, func id: {self.func_id:#x}")
         elif self.pclntbl.magic_number == common.MAGIC_120:
@@ -701,6 +705,7 @@ class FuncStruct():
             try:
                 self.func_type = FUNC_TYPES[self.func_id]
             except Exception as e:
+                self.func_type = FUNC_TYPES[-1]
                 common._debug(f"Invalid funcID. Curr func entry: {real_func_addr.start_ea:#x}, \
                 func st addr: {self.addr:#x}, func id: {self.func_id:#x}")
 
