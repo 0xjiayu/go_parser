@@ -185,11 +185,13 @@ def get_goroot():
                 curr_addr = idc.find_code(curr_addr, idaapi.SEARCH_DOWN)
 
             if goroot_path_len == 0 or goroot_path_addr == 0:
-                raise Exception("Invalid GOROOT Address ang Length")
+                _debug("Invalid GOROOT Address and Length")
+                return ""
 
             goroot_path_str = idc.get_bytes(goroot_path_addr, goroot_path_len).decode("utf-8", errors="ignore")
             if goroot_path_str is None or len(goroot_path_str)==0:
-                raise Exception("Invalid GOROOT")
+                _debug("Invalid GOROOT")
+                return ""
             idc.create_strlit(goroot_path_addr, goroot_path_addr+goroot_path_len)
             idaapi.auto_wait()
             break
