@@ -743,12 +743,12 @@ class ModuleData():
             pluginpath_addr = read_mem(self.start_addr + 53*ADDR_SZ, read_only=is_test)
             pluginpath_len  = read_mem(self.start_addr + 54*ADDR_SZ, read_only=is_test)
             self.pluginpath = "" if (pluginpath_len == 0x0 or pluginpath_addr == 0x0) else \
-                idc.get_bytes(pluginpath_addr, pluginpath_len).decode()
+                idc.get_bytes(pluginpath_addr, pluginpath_len).decode("utf-8", errors="ignore")
 
             modulename_addr = read_mem(self.start_addr + 58*ADDR_SZ, read_only=is_test)
             modulename_len  = read_mem(self.start_addr + 59*ADDR_SZ, read_only=is_test)
             self.modulename ="" if modulename_addr == 0x0 or modulename_len == 0x0 else \
-                idc.get_bytes(modulename_addr, modulename_len).decode()
+                idc.get_bytes(modulename_addr, modulename_len).decode("utf-8", errors="ignore")
 
             self.hasmain = idc.get_wide_byte(self.start_addr + 63*ADDR_SZ)
             self.next    = read_mem(self.start_addr + 69*ADDR_SZ+1, read_only=is_test)
