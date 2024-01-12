@@ -228,12 +228,18 @@ class RType():
         self.gcdata = read_mem(self.addr + 3*ADDR_SZ + 8)
 
         self.name_off = read_mem(self.addr + 4*ADDR_SZ + 8, forced_addr_sz=4) & 0xFFFFFFFF
-        self.name_addr = (self.moddata.types_addr + self.name_off) & 0xFFFFFFFF
+        if ADDR_SZ == 4:
+            self.name_addr = (self.moddata.types_addr + self.name_off) & 0xFFFFFFFF
+        else:
+            self.name_addr = (self.moddata.types_addr + self.name_off) & 0xFFFFFFFFFFFFFFFF
 
         self.ptrtothis_off = read_mem(self.addr + 4*ADDR_SZ + 12, forced_addr_sz=4) & 0xFFFFFFFF
 
         if self.ptrtothis_off > 0:
-            self.ptrtothis_addr = (self.moddata.types_addr + self.ptrtothis_off) & 0xFFFFFFFF
+            if ADDR_SZ == 4:
+                self.ptrtothis_addr = (self.moddata.types_addr + self.ptrtothis_off) & 0xFFFFFFFF
+            else:
+                self.ptrtothis_addr = (self.moddata.types_addr + self.ptrtothis_off) & 0xFFFFFFFFFFFFFFFF
 
         idc.set_cmt(self.addr, "type size", 0)
         idc.set_cmt(self.addr + ADDR_SZ, "type ptrdata", 0)
@@ -855,13 +861,19 @@ class IMethodType():
     def parse(self):
         common._debug(f"Imethod Type @ {self.addr:#x}")
         name_off = read_mem(self.addr, forced_addr_sz=4)
-        name_addr = (self.types_addr + name_off) & 0xFFFFFFFF
+        if ADDR_SZ == 4:
+            name_addr = (self.types_addr + name_off) & 0xFFFFFFFF
+        else:
+            name_addr = (self.types_addr + name_off) & 0xFFFFFFFFFFFFFFFF
         self.name_obj = Name(name_addr, self.type_parser.moddata)
         self.name_obj.parse(False)
         self.name = self.name_obj.simple_name
 
         type_off = read_mem(self.addr+4, forced_addr_sz=4)
-        type_addr = (self.types_addr + type_off) & 0xFFFFFFFF
+        if ADDR_SZ == 4:
+            type_addr = (self.types_addr + type_off) & 0xFFFFFFFF
+        else:
+            type_addr = (self.types_addr + type_off) & 0xFFFFFFFFFFFFFFFF
         if type_off > 0 and type_addr != idc.BADADDR:
             if self.type_parser.has_been_parsed(type_addr):
                 self.type = self.type_parser.parsed_types[type_addr].rtype
@@ -1172,7 +1184,10 @@ class UncommonType():
         self.unused = read_mem(self.uncomm_type_addr + 12, forced_addr_sz=4) & 0xFFFFFFFF
 
         # parse methods
-        methods_start_addr = (self.uncomm_type_addr + self.meth_off) & 0xFFFFFFFF
+        if ADDR_SZ == 4:
+            methods_start_addr = (self.uncomm_type_addr + self.meth_off) & 0xFFFFFFFF
+        else:
+            methods_start_addr = (self.uncomm_type_addr + self.meth_off) & 0xFFFFFFFFFFFFFFFF
         for i in range(self.meth_cnt):
             #meth_addr = self.uncomm_type_addr + i * self.size
             meth = MethodType(methods_start_addr, self.type_parser)
@@ -1188,8 +1203,8 @@ class UncommonType():
         common._debug(f"Uncommon type methods number: {self.meth_cnt}")
         idc.set_cmt(self.uncomm_type_addr + 6, f"exported methods number: {self.xmeth_cnt}", 0)
         if self.meth_cnt > 0:
-            idc.set_cmt(self.uncomm_type_addr + 8, f"methods addr: {(self.uncomm_type_addr + self.meth_off) & 0xFFFFFFFF:#x}", 0)
-            common._debug(f"Uncommon type methods addr: {(self.uncomm_type_addr + self.meth_off) & 0xFFFFFFFF:#x}")
+            idc.set_cmt(self.uncomm_type_addr + 8, f"methods addr: {(self.uncomm_type_addr + self.meth_off) & 0xFFFFFFFFFFFFFFFF:#x}", 0)
+            common._debug(f"Uncommon type methods addr: {(self.uncomm_type_addr + self.meth_off) & 0xFFFFFFFFFFFFFFFF:#x}")
         else:
             idc.set_cmt(self.uncomm_type_addr + 8, "methods offset", 0)
         idc.set_cmt(self.uncomm_type_addr + 12, f"unused field: {self.unused}", 0)
@@ -1235,7 +1250,7 @@ class MethodType():
         self.size = 4*4
 
     def parse(self):
-        common._debug("MethodType @ {self.addr:#x}")
+        common._debug(f"MethodType @ {self.addr:#x}")
         name_off = read_mem(self.addr, forced_addr_sz=4) & 0xFFFFFFFF
         if name_off > 0:
             self.name_addr = self.types_addr + name_off
@@ -1266,7 +1281,10 @@ class MethodType():
         common._debug("Uncommon type Method Type%s" % \
             (f"(@ {self.mtype_addr:#x}): {self.mtype.name_obj.name_str}" if (type_off>0 and self.mtype is not None) else ""))
 
-        self.ifn_addr = (self.text_addr + self.ifn_off) & 0xFFFFFFFF
+        if ADDR_SZ == 4:
+            self.ifn_addr = (self.text_addr + self.ifn_off) & 0xFFFFFFFF
+        else:
+            self.ifn_addr = (self.text_addr + self.ifn_off) & 0xFFFFFFFFFFFFFFFF
         ifn_name = idc.get_func_name(self.ifn_addr)
         if ifn_name is None or len(ifn_name) == 0:
             if self.mtype is not None:
@@ -1276,7 +1294,10 @@ class MethodType():
         idc.set_cmt(self.addr + 8, "ifn%s" % \
             (f"(@ {self.ifn_addr:#x}): {ifn_name}" if self.ifn_off>0 else ""), 0)
 
-        self.tfn_addr = (self.text_addr + self.tfn_off) & 0xFFFFFFFF
+        if ADDR_SZ == 4:
+            self.tfn_addr = (self.text_addr + self.tfn_off) & 0xFFFFFFFF
+        else:
+            self.tfn_addr = (self.text_addr + self.tfn_off) & 0xFFFFFFFFFFFFFFFF
         tfn_name = idc.get_func_name(self.tfn_addr)
         if tfn_name is None or len(tfn_name) == 0:
             if self.mtype is not None:
